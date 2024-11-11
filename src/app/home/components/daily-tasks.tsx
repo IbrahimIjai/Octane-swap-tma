@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { CheckCircle2, Circle, Trophy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+
 type Task = {
 	id: string;
 	title: string;

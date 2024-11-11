@@ -53,19 +53,16 @@ function MiningDashboard() {
 	).toFixed(6);
 
 	return (
-		<Card className="w-full max-w-md mx-auto my-12">
+		<Card className="w-full max-w-md mx-auto my-6 border-none">
 			<CardHeader className="flex flex-col items-center">
 				{/* <OctaneSwapLogo size={64} animated={false} /> */}
 				<OctaneSwapLogo
 					size={128}
 					variant={1}
-					animated={stats.isStaked}
-					className="animate-spin spin-out-12"
+					animated={stats.isStaked ? true : false}
+					className={`${stats.isStaked && "animate-spin spin-out-12"}`}
 				/>
-				<CardTitle className="text-2xl font-bold mt-4 flex items-center gap-2">
-					<Pickaxe className="w-6 h-6 text-primary" />
-					Mining Dashboard
-				</CardTitle>
+				<CardTitle className="text-2xl font-bold mt-4 flex items-center gap-2"></CardTitle>
 			</CardHeader>
 			<CardContent className="space-y-6">
 				<div className="grid grid-cols-2 gap-4">

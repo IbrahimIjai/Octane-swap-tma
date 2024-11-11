@@ -22,14 +22,12 @@ export default function ConnectButton() {
 	const { connect, error, isError, isConnecting } = useConnectUI();
 	const { disconnect } = useDisconnect();
 	const { isConnected } = useIsConnected();
-	const { accounts } = useAccounts();
 	const { wallet } = useWallet();
-	const { currentConnector } = useCurrentConnector();
 	const [signature, setSignature] = useState("");
 	console.log({ wallet });
 
 	return (
-		<div className="flex flex-col items-center space-y-4">
+		<div className="flex flex-col items-center">
 			{!isConnected ? (
 				<Button
 					onClick={() => {

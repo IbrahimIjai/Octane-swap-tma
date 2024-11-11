@@ -1,5 +1,5 @@
 "use client";
-import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
+import React, { Dispatch, SetStateAction, useEffect } from "react";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { AlertTriangle, Sparkles, X } from "lucide-react";
 import Link from "next/link";
@@ -13,14 +13,18 @@ function Notifications({
 	isVisible: boolean;
 	setIsVisible: Dispatch<SetStateAction<boolean>>;
 }) {
-	const [hasCancelled, setHasCancelled] = useState(false);
 	const pathname = usePathname();
 
 	useEffect(() => {
-		!hasCancelled && pathname.startsWith("/home") && setIsVisible(true);
-	}, [pathname, hasCancelled]);
+		if (pathname.startsWith("/home") || pathname.startsWith("/earn")) {
+			setIsVisible(true);
+		} else {
+			setIsVisible(false);
+		}
+	}, [pathname, setIsVisible]);
 
 	if (!isVisible) return null;
+
 	return (
 		<div className="w-full bg-gradient-to-r from-primary/40 to-secondary/40 text-white fixed inset-x-0 top-0 z-30">
 			<div className="container mx-auto px-4">
@@ -40,7 +44,6 @@ function Notifications({
 						size="icon"
 						className="absolute right-2 top-2 text-yellow-800 hover:text-yellow-900 hover:bg-yellow-200 p-0 w-fit h-fit"
 						onClick={() => {
-							setHasCancelled(true);
 							setIsVisible(false);
 						}}
 						aria-label="Close notification">

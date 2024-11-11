@@ -31,6 +31,17 @@ export default function CTAButtons() {
 					<ChevronRight className="w-4 h-4" />
 				</div>
 			</ShinyButton>
+
+			<ShinyButton className="w-full bg-background/10  text-foreground">
+				<div className="flex items-center justify-between p-2">
+					<div className="flex gap-3 items-center">
+						<Rocket className="w-4 h-4 mr-2" />
+						<span>Connect twitter</span>
+					</div>
+
+					<ChevronRight className="w-4 h-4" />
+				</div>
+			</ShinyButton>
 		</div>
 	);
 }

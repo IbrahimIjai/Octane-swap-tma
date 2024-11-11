@@ -23,7 +23,7 @@ const navItems = [
 	{ href: "/earn", icon: "ListTodo", label: "Earn" },
 	{ href: "/roadmap", icon: "User", label: "Roadmap" },
 	{ href: "/friends", icon: "UserRoundPlus", label: "Friends" },
-	{ href: "/leaderboard", icon: "Crown", label: "Leaderboard" },
+	{ href: "/leader-board", icon: "Crown", label: "Leaderboard" },
 ];
 
 export default function NavigationButton() {

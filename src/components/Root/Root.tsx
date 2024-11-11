@@ -74,7 +74,7 @@ function RootInner({ children }: PropsWithChildren) {
 						isVisible={showNotification}
 						setIsVisible={setShowNotification}
 					/>
-					<div className={`${showNotification ? "pt-36" : "pt-10"} px-4 pb-32`}>
+					<div className={`${showNotification ? "pt-36" : "pt-10"} px-2 pb-32`}>
 						{children}
 					</div>
 				</ProvidersForFuel>
