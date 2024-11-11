@@ -7,6 +7,7 @@ import "@telegram-apps/telegram-ui/dist/styles.css";
 import "normalize.css/normalize.css";
 import "./_assets/globals.css";
 import NavigationButton from "@/components/layout/navigation-button";
+import Notifications from "@/components/notifications";
 
 export const metadata: Metadata = {
 	title: "Your Application Title Goes Here",

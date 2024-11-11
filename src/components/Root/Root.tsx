@@ -20,6 +20,7 @@ import { useDidMount } from "@/hooks/useDidMount";
 
 import "./styles.css";
 import { ProvidersForFuel } from "./fuel/fuel-provider";
+import Notifications from "../notifications";
 
 function App(props: PropsWithChildren) {
 	const lp = useLaunchParams();
@@ -36,14 +37,10 @@ function App(props: PropsWithChildren) {
 	}, [themeParams]);
 
 	useEffect(() => {
-		// miniApp.setHeaderColor("#2b1717");
+		miniApp.setHeaderColor("#00060097");
 		return viewport && bindViewportCSSVars(viewport);
 	}, [viewport]);
-	// console.log({
-	// 	theme: miniApp.isDark ? "Dark" : "light",
-	// 	head: miniApp.headerColor,
-	// 	// setheader: miniApp.,
-	// });
+
 	return (
 		<AppRoot
 			appearance={"dark"}
@@ -61,25 +58,28 @@ function RootInner({ children }: PropsWithChildren) {
 	}
 
 	const debug = useLaunchParams().startParam === "debug";
-	// const manifestUrl = useMemo(() => {
-	// 	return new URL("tonconnect-manifest.json", window.location.href).toString();
-	// }, []);
-
-	// Enable debug mode to see all the methods sent and events received.
 	useEffect(() => {
 		if (debug) {
 			import("eruda").then((lib) => lib.default.init());
 		}
 	}, [debug]);
 
+	const [showNotification, setShowNotification] = useState(true);
+
 	return (
-		// <TonConnectUIProvider manifestUrl={manifestUrl}>
 		<SDKProvider acceptCustomStyles debug={debug}>
 			<App>
-				<ProvidersForFuel>{children}</ProvidersForFuel>
+				<ProvidersForFuel>
+					<Notifications
+						isVisible={showNotification}
+						setIsVisible={setShowNotification}
+					/>
+					<div className={`${showNotification ? "pt-36" : "pt-10"} px-4 pb-32`}>
+						{children}
+					</div>
+				</ProvidersForFuel>
 			</App>
 		</SDKProvider>
-		// </TonConnectUIProvider>
 	);
 }
 

@@ -1,43 +1,54 @@
 "use client";
-import React, { useState } from "react";
+import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
-import { AlertTriangle, X } from "lucide-react";
+import { AlertTriangle, Sparkles, X } from "lucide-react";
 import Link from "next/link";
 import { Button } from "../ui/button";
+import { usePathname } from "next/navigation";
 
-function Notifications() {
-	const [isVisible, setIsVisible] = useState(true);
+function Notifications({
+	isVisible,
+	setIsVisible,
+}: {
+	isVisible: boolean;
+	setIsVisible: Dispatch<SetStateAction<boolean>>;
+}) {
+	const [hasCancelled, setHasCancelled] = useState(false);
+	const pathname = usePathname();
+
+	useEffect(() => {
+		!hasCancelled && pathname.startsWith("/home") && setIsVisible(true);
+	}, [pathname, hasCancelled]);
 
 	if (!isVisible) return null;
 	return (
-		<>
-			<div className="w-full bg-yellow-50 border-b border-yellow-200">
-				<div className="container mx-auto px-4">
-					<Alert
-						variant="default"
-						className="my-2 pr-12 relative bg-yellow-100 border-yellow-300 text-yellow-800">
-						<AlertTriangle className="h-4 w-4" />
-						<AlertTitle>Action Required</AlertTitle>
-						<AlertDescription>
-							You have not bound your wallet address to your TMA.
-							<Link
-								href="/bind-wallet"
-								className="ml-2 underline font-medium text-yellow-900 hover:text-yellow-700">
-								Click here to proceed
-							</Link>
-						</AlertDescription>
-						<Button
-							variant="ghost"
-							size="icon"
-							className="absolute right-2 top-2 text-yellow-800 hover:text-yellow-900 hover:bg-yellow-200"
-							onClick={() => setIsVisible(false)}
-							aria-label="Close notification">
-							<X className="h-4 w-4" />
-						</Button>
-					</Alert>
-				</div>
+		<div className="w-full bg-gradient-to-r from-primary/40 to-secondary/40 text-white fixed inset-x-0 top-0 z-30">
+			<div className="container mx-auto px-4">
+				<Alert variant="default" className="my-2 pr-12 relative ">
+					<Sparkles className="h-5 w-5 text-yellow-300 mr-2 animate-pulse" />
+					<AlertTitle>Exciting Updates</AlertTitle>
+					<AlertDescription className="text-muted-foreground">
+						See Octane Swap&apos;s ambitious roadmap.
+						<Link
+							href="/bind-wallet"
+							className="ml-2 underline font-medium text-primary">
+							roadmap
+						</Link>
+					</AlertDescription>
+					<Button
+						variant="ghost"
+						size="icon"
+						className="absolute right-2 top-2 text-yellow-800 hover:text-yellow-900 hover:bg-yellow-200 p-0 w-fit h-fit"
+						onClick={() => {
+							setHasCancelled(true);
+							setIsVisible(false);
+						}}
+						aria-label="Close notification">
+						<X className="h-4 w-4" />
+					</Button>
+				</Alert>
 			</div>
-		</>
+		</div>
 	);
 }
 

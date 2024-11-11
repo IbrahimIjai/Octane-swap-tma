@@ -12,6 +12,12 @@ import {
 } from "@fuels/react";
 import { Loader2 } from "lucide-react";
 import { shortenAddress } from "@/lib/utils";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
+
 export default function ConnectButton() {
 	const { connect, error, isError, isConnecting } = useConnectUI();
 	const { disconnect } = useDisconnect();
@@ -20,31 +26,8 @@ export default function ConnectButton() {
 	const { wallet } = useWallet();
 	const { currentConnector } = useCurrentConnector();
 	const [signature, setSignature] = useState("");
-        console.log({ wallet });
-	async function signMessage() {
-		console.log("signMessage function called");
-		try {
-			const message = "Hello World!";
-			console.log("Message to sign:", message);
+	console.log({ wallet });
 
-			if (hasSignMessageCustomCurve(currentConnector)) {
-				console.log("Using custom curve signing");
-				const { curve, signature } =
-					await currentConnector.signMessageCustomCurve(message);
-				console.log("Custom curve signature obtained:", { curve, signature });
-				setSignature(`${curve} signature - ${signature}`);
-			} else if (wallet) {
-				console.log("Using native wallet signing");
-				const signature = await wallet.signMessage(message);
-				console.log("Native signature obtained:", signature);
-				setSignature(`Native signature - ${signature}`);
-			} else {
-				console.log("No suitable signing method available");
-			}
-		} catch (error) {
-			console.error("Error in signMessage:", error);
-		}
-	}
 	return (
 		<div className="flex flex-col items-center space-y-4">
 			{!isConnected ? (
@@ -64,35 +47,26 @@ export default function ConnectButton() {
 					)}
 				</Button>
 			) : (
-				<div className="flex items-center space-x-4">
-					<Button variant="outline" onClick={() => signMessage()}>
-						Sign Message
-					</Button>
-					<Button
-						variant="destructive"
-						onClick={() => {
-							disconnect();
-							setSignature("");
-						}}>
-						Disconnect
-					</Button>
-				</div>
+				<Popover>
+					<PopoverTrigger>
+						Connected: {wallet && shortenAddress(wallet.address.toString())}
+					</PopoverTrigger>
+					<PopoverContent>
+						{" "}
+						<Button
+							variant="destructive"
+							className="w-full"
+							onClick={() => {
+								disconnect();
+								setSignature("");
+							}}>
+							Disconnect
+						</Button>
+					</PopoverContent>
+				</Popover>
 			)}
 
 			{isError && <p className="text-destructive">{error?.message}</p>}
-
-			{wallet && (
-				<div className="text-sm font-medium">
-					Connected: {shortenAddress(wallet.address.toString())}
-				</div>
-			)}
-
-			{isConnected && signature && (
-				<div className="mt-4 text-sm">
-					<h3 className="font-semibold">Signature</h3>
-					<p className="mt-1 break-all">{signature}</p>
-				</div>
-			)}
 		</div>
 	);
 }

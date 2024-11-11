@@ -7,7 +7,7 @@ import { Link } from "@/components/Link/Link";
 import tonSvg from "./_assets/ton.svg";
 import UserHomeInfo from "@/components/ibelick-ui/swipable-stack-cards";
 import Header from "@/components/layout/header";
-import DailyTasks from "@/components/daily-tasks";
+import DailyTasks from "@/app/home/components/daily-tasks";
 import PageContent from "@/components/Root/fuel/page-content";
 import ConnectButton from "@/components/fuel/connect-btn";
 
