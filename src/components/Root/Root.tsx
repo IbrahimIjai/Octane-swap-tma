@@ -21,6 +21,7 @@ import { useDidMount } from "@/hooks/useDidMount";
 import "./styles.css";
 import { ProvidersForFuel } from "./fuel/fuel-provider";
 import Notifications from "../notifications";
+import PageLoadingUi from "../page-loading";
 
 function App(props: PropsWithChildren) {
 	const lp = useLaunchParams();
@@ -93,6 +94,8 @@ export function Root(props: PropsWithChildren) {
 			<RootInner {...props} />
 		</ErrorBoundary>
 	) : (
-		<div className="root__loading">Loading</div>
+		<div className="root__loading">
+			<PageLoadingUi />
+		</div>
 	);
 }

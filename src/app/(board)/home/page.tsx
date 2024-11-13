@@ -1,6 +1,6 @@
 "use client";
 
-import DailyTasks from "@/app/home/components/daily-tasks";
+import DailyTasks from "@/app/(board)/home/components/daily-tasks";
 import ConnectButton from "@/components/fuel/connect-btn";
 import OctaneSwapLogo from "@/components/logo";
 import CTAButtons from "./components/cta-buttons";

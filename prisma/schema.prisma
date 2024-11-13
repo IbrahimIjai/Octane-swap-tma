@@ -9,6 +9,58 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id String @id @default(cuid())
+
+  //socials
+  telegramId      String? @unique
+  twitterUsername String? @unique @default("octaneswap")
+
+  //web3
+  address String? @unique // User's wallet address
+
+  //Airdrop balance
+  poctBalance           Decimal @default(0) // User's pOCT balance
+  telegramAgeOCTRewards Decimal @default(0)
+
+  //Points Stakings
+
+  // stakes         StakingPosition[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  StakingPosition StakingPosition[]
+}
+
+model StakingPool {
+  id             String            @id @default(cuid())
+  totalSupply    Decimal           @default(0)
+  rewardRate     Decimal // Rewards per second
+  rewardAmount   Decimal // Total rewards for the pool
+  startTime      DateTime // Pool start time
+  endTime        DateTime // Pool end time
+  lastUpdateTime DateTime // Last reward calculation timestamp
+  positions      StakingPosition[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+}
+
+model StakingPosition {
+  id                 String      @id @default(cuid())
+  user               User        @relation(fields: [userId], references: [id])
+  userId             String
+  pool               StakingPool @relation(fields: [poolId], references: [id])
+  poolId             String
+  amount             Decimal // Staked amount
+  rewardPerTokenPaid Decimal     @default(0) // Last reward per token checkpoint
+  rewards            Decimal     @default(0) // Accumulated rewards
+  lastUpdateTime     DateTime // Last reward calculation timestamp
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  @@unique([userId, poolId])
 }

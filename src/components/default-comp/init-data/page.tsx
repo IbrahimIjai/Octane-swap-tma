@@ -11,7 +11,7 @@ import { List, Placeholder } from "@telegram-apps/telegram-ui";
 import {
 	DisplayData,
 	type DisplayDataRow,
-} from "@/components/DisplayData/DisplayData";
+} from "@/components/default-comp/DisplayData/DisplayData";
 import Image from "next/image";
 
 function getUserRows(user: User): DisplayDataRow[] {

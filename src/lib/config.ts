@@ -34,3 +34,11 @@ export const DEFAULT_WAGMI_CONFIG = createConfig({
 	}),
 	ssr: true,
 });
+
+export const TOTAL_COMMUNITY_INCENTIVES = 22_500_000; // 22.5 million tokens
+export const TELEGRAM_AGE_ALLOCATION_PERCENTAGE = 0.05; // 5% of community incentives
+export const TELEGRAM_AGE_POOL =
+	TOTAL_COMMUNITY_INCENTIVES * TELEGRAM_AGE_ALLOCATION_PERCENTAGE; // Total tokens for Telegram age rewards
+export const MAX_ACCOUNT_AGE_DAYS = 365 * 2; // Cap at 2 years for fairness
+export const MIN_ACCOUNT_AGE_DAYS = 30; // Minimum age requirement
+export const DEFAULT_TWITTER_USERNAME = "octaneswap";

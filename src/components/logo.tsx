@@ -58,7 +58,7 @@ const OctaneSwapLogo: React.FC<OctaneSwapLogoProps> = ({
 	return (
 		<div
 			className={`inline-block ${
-				animated ? "animate-spin-slow" : ""
+				animated ? "animate-spin" : ""
 			} ${className}`}
 			style={{ width: size, height: size }}>
 			<svg
