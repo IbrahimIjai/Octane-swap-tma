@@ -11,6 +11,7 @@ import { Loader2 } from "lucide-react";
 import { calculateAccountAge, calculateTelegramAgeReward } from "@/lib/utils";
 import { useUser } from "@/hooks/api/useUser";
 import { useRouter } from "next/navigation";
+import PageLoadingUi from "@/components/loaders/page-loading";
 
 export default function RewardsCalculator() {
 	const { push } = useRouter();
@@ -46,9 +47,9 @@ export default function RewardsCalculator() {
 
 	if (isLoading || !isUserReady || !isFetchingUserSuccess) {
 		return (
-			<div className="w-full h-full items-center flex justify-center">
-				<p>Loading...</p>
-			</div>
+			<>
+				<PageLoadingUi />
+			</>
 		);
 	}
 	if (isUserError || isCreateError) {

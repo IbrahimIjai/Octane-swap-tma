@@ -1,5 +1,5 @@
 import React from "react";
-import OctaneSwapLogo from "./logo";
+import OctaneSwapLogo from "../logo";
 
 function PageLoadingUi() {
 	return (

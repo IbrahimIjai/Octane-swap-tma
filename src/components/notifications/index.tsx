@@ -5,6 +5,7 @@ import { AlertTriangle, Sparkles, X } from "lucide-react";
 import Link from "next/link";
 import { Button } from "../ui/button";
 import { usePathname } from "next/navigation";
+import { useIsMounted } from "connectkit";
 
 function Notifications({
 	isVisible,
@@ -14,6 +15,7 @@ function Notifications({
 	setIsVisible: Dispatch<SetStateAction<boolean>>;
 }) {
 	const pathname = usePathname();
+	const isMounted = useIsMounted();
 
 	useEffect(() => {
 		if (pathname.startsWith("/home") || pathname.startsWith("/earn")) {
@@ -23,7 +25,7 @@ function Notifications({
 		}
 	}, [pathname, setIsVisible]);
 
-	if (!isVisible) return null;
+	if (!isVisible || !isMounted) return null;
 
 	return (
 		<div className="w-full bg-gradient-to-r from-primary/40 to-secondary/40 text-white fixed inset-x-0 top-0 z-30">

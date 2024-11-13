@@ -21,7 +21,7 @@ import { useDidMount } from "@/hooks/useDidMount";
 import "./styles.css";
 import { ProvidersForFuel } from "./fuel/fuel-provider";
 import Notifications from "../notifications";
-import PageLoadingUi from "../page-loading";
+import PageLoadingUi from "../loaders/page-loading";
 
 function App(props: PropsWithChildren) {
 	const lp = useLaunchParams();

@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ArrowUpRight, Pickaxe, Coins } from "lucide-react";
 import OctaneSwapLogo from "@/components/logo";
+import { User } from "@prisma/client";
+import { useUserStake } from "@/hooks/api/useUserStakeFn";
 
 interface MiningStats {
 	totalStakable: number;
@@ -18,7 +20,10 @@ interface MiningStats {
 	isStaked: boolean;
 }
 
-function MiningDashboard() {
+function MiningDashboard({ user }: { user: User }) {
+	const { stake, isStaking, isStakeSuccess, isStakeError, stakeError } =
+		useUserStake({ user });
+
 	const [stats, setStats] = useState<MiningStats>({
 		totalStakable: 1000,
 		totalStaked: 0,
@@ -68,8 +73,13 @@ function MiningDashboard() {
 				<div className="grid grid-cols-2 gap-4">
 					<Card>
 						<CardContent className="p-4">
-							<p className="text-sm text-muted-foreground">Total Stakable</p>
-							<p className="text-2xl font-bold">{stats.totalStakable} pOCT</p>
+							<p className="text-xm text-muted-foreground">pOCT</p>
+							<p className="text-2xl font-semibold ">
+								{(
+									Number(user.poctBalance) + Number(user.telegramAgeOCTRewards)
+								).toString()}{" "}
+								pOCT
+							</p>
 						</CardContent>
 					</Card>
 					<Card>
@@ -129,7 +139,7 @@ function MiningDashboard() {
 							</Button>
 						</div>
 					) : (
-						<Button onClick={handleStake} className="w-full">
+						<Button onClick={async () => await stake()} className="w-full">
 							Stake Now
 						</Button>
 					)}

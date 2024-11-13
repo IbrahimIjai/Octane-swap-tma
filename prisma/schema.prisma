@@ -20,6 +20,7 @@ model User {
   //socials
   telegramId      String? @unique
   twitterUsername String? @unique @default("octaneswap")
+  refferalLink    String? @unique @default("buji")
 
   //web3
   address String? @unique // User's wallet address
@@ -28,16 +29,15 @@ model User {
   poctBalance           Decimal @default(0) // User's pOCT balance
   telegramAgeOCTRewards Decimal @default(0)
 
-  //Points Stakings
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  // stakes         StakingPosition[]
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  StakingPosition StakingPosition[]
+  //Points Stakings
+  StakingPositions StakingPosition[]
 }
 
 model StakingPool {
-  id             String            @id @default(cuid())
+  id             String            @id @unique @default(cuid())
   totalSupply    Decimal           @default(0)
   rewardRate     Decimal // Rewards per second
   rewardAmount   Decimal // Total rewards for the pool
