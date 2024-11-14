@@ -65,7 +65,7 @@ export default function RewardsCalculator() {
 			</motion.div>
 		);
 	}
-	if (isFetchingUserSuccess && !userData?.id && !userData)
+	// if (isFetchingUserSuccess && !userData?.id && !userData)
 		return (
 			<div className="relative min-h-screen flex flex-col items-center justify-center bg-background text-foreground">
 				<motion.div

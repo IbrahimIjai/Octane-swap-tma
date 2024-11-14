@@ -27,6 +27,13 @@ export async function GET(req: NextRequest) {
 		console.log({ telegramId, mesage: "In" });
 		const user = await prisma.user.findUnique({
 			where: { telegramId },
+			include: {
+				StakingPositions: {
+					include: {
+						pool: true,
+					},
+				},
+			},
 		});
 
 		if (!user) {
@@ -61,7 +68,6 @@ export async function POST(req: NextRequest) {
 			data: {
 				telegramId,
 				telegramAgeOCTRewards,
-                
 			},
 		});
 

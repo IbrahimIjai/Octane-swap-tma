@@ -1,0 +1,172 @@
+import { prisma } from "@/lib/prisma";
+// import { Decimal } from "@prisma/client/runtime/library.js";
+import { Prisma, StakingPool } from "@prisma/client/edge";
+// Use Prisma.Decimal instead of Decimal from runtime
+
+const { Decimal } = Prisma;
+// export class StakingCalculator {
+// 	static async calculateRewardPerToken(poolId: string) {
+// 		const pool = await prisma.stakingPool.findUnique({
+// 			where: { id: poolId },
+// 			select: {
+// 				totalSupply: true,
+// 				rewardRate: true,
+// 				lastUpdateTime: true,
+// 				endTime: true,
+// 			},
+// 		});
+
+// 		if (!pool || pool.totalSupply.equals(0)) {
+// 			return new Decimal(0);
+// 		}
+
+// 		const currentTime = new Date();
+// 		const lastTimeRewardApplicable =
+// 			currentTime > pool.endTime ? pool.endTime : currentTime;
+
+// 		const timeDelta =
+// 			lastTimeRewardApplicable.getTime() - pool.lastUpdateTime.getTime();
+// 		const timeInSeconds = timeDelta / 1000;
+
+// 		return pool.rewardRate.mul(timeInSeconds).mul(1e18).div(pool.totalSupply);
+// 	}
+
+// 	static async calculateEarned(positionId: string) {
+// 		const position = await prisma.stakingPosition.findUnique({
+// 			where: { id: positionId },
+// 			include: { pool: true },
+// 		});
+
+// 		if (!position) {
+// 			return new Decimal(0);
+// 		}
+
+// 		const rewardPerToken = await this.calculateRewardPerToken(position.poolId);
+
+// 		return position.amount
+// 			.mul(rewardPerToken.sub(position.rewardPerTokenPaid))
+// 			.div(1e18)
+// 			.add(position.rewards);
+// 	}
+// }
+
+export class StakingCalculator {
+	// Replicates rewardPerToken() from Synthetix
+	static async calculateRewardPerTokenStored(pool: StakingPool) {
+		// const pool = await prisma.stakingPool.findUnique({
+		// 	where: { id: poolId },
+		// });
+
+		if (!pool || pool.totalSupply.equals(0)) {
+			return new Decimal(0);
+		}
+
+		const lastTimeRewardApplicable = Math.min(
+			Date.now(),
+			pool.endTime.getTime(),
+		);
+
+		const timeDiff = new Decimal(
+			Math.max(lastTimeRewardApplicable - pool.lastUpdateTime.getTime(), 0),
+		).div(1000); // Convert to seconds
+
+		return pool.rewardPerTokenStored.add(
+			timeDiff.mul(pool.rewardRate).mul(1e18).div(pool.totalSupply),
+		);
+	}
+
+	// Replicates earned() from Synthetix
+	static async calculateEarned(positionId: string) {
+		const position = await prisma.stakingPosition.findUnique({
+			where: { id: positionId },
+			include: { pool: true },
+		});
+
+		if (!position) {
+			return new Decimal(0);
+		}
+
+		const rewardPerToken = await this.calculateRewardPerTokenStored(
+			position.pool,
+		);
+
+		return position.amount
+			.mul(rewardPerToken.sub(position.rewardPerTokenPaid))
+			.div(1e18)
+			.add(position.rewards);
+	}
+
+	// Replicates updateReward modifier functionality
+	static async updateReward(userId: string, poolId: string) {
+		const pool = await prisma.stakingPool.findUnique({
+			where: { id: poolId },
+			include: {
+				positions: true,
+			},
+		});
+
+		if (!pool) {
+			throw new Error("Pool not found");
+		}
+
+		const rewardPerTokenStored = await this.calculateRewardPerTokenStored(pool);
+		const lastTimeRewardApplicable = Math.min(
+			Date.now(),
+			pool.endTime.getTime(),
+		);
+
+		// Update pool
+		await prisma.stakingPool.update({
+			where: { id: poolId },
+			data: {
+				rewardPerTokenStored,
+				lastUpdateTime: new Date(lastTimeRewardApplicable),
+			},
+		});
+
+		// If there's a user, update their position
+		if (userId) {
+			const position = await prisma.stakingPosition.findUnique({
+				where: { userId_poolId: { userId, poolId } },
+			});
+
+			if (position) {
+				const earned = await this.calculateEarned(position.id);
+				await prisma.stakingPosition.update({
+					where: { id: position.id },
+					data: {
+						rewards: earned,
+						rewardPerTokenPaid: rewardPerTokenStored,
+						lastUpdateTime: new Date(lastTimeRewardApplicable),
+					},
+				});
+			}
+		}
+
+		return {
+			pool,
+			rewardPerTokenStored,
+			lastTimeRewardApplicable,
+		};
+	}
+}
+
+export class poolInfo {
+	static async getPools() {
+		const pools = await prisma.stakingPool.findMany({
+			orderBy: {
+				startTime: "desc",
+			},
+			select: {
+				id: true,
+				totalSupply: true,
+				rewardRate: true,
+				lastUpdateTime: true,
+				startTime: true,
+				endTime: true,
+			},
+		});
+		const latestPool = pools[0];
+		return { pools, latestPool };
+	}
+}

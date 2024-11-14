@@ -9,8 +9,16 @@ import { Separator } from "@/components/ui/separator";
 import { ArrowUpRight, Pickaxe, Coins } from "lucide-react";
 import OctaneSwapLogo from "@/components/logo";
 import { User } from "@prisma/client";
-import { useUserStake } from "@/hooks/api/useUserStakeFn";
+import { UserWithStaking, useUserStake } from "@/hooks/api/staking-game";
 
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "@/components/ui/dialog";
 interface MiningStats {
 	totalStakable: number;
 	totalStaked: number;
@@ -20,42 +28,29 @@ interface MiningStats {
 	isStaked: boolean;
 }
 
-function MiningDashboard({ user }: { user: User }) {
-	const { stake, isStaking, isStakeSuccess, isStakeError, stakeError } =
-		useUserStake({ user });
+function MiningDashboard({ user }: { user: UserWithStaking }) {
+	const {
+		stake,
+		claim,
+		isStaking,
+		isClaiming,
+		isStakeSuccess,
+		isStakeError,
+		stakeError,
+		totalStaked,
+		isCurrentlyStaking,
+		hasClaimableRewards,
+		positionsInfo,
+		userWithStaking,
+	} = useUserStake({ userWithStaking: user });
 
-	const [stats, setStats] = useState<MiningStats>({
-		totalStakable: 1000,
-		totalStaked: 0,
-		currentAPR: 12.5,
-		totalPool: 1000000,
-		minedAmount: 250000,
-		isStaked: false,
-	});
+	console.log({ isStaking, isStakeSuccess, isStakeError, stakeError });
 
-	const handleStake = () => {
-		setStats((prevStats) => ({
-			...prevStats,
-			isStaked: true,
-			totalStaked: prevStats.totalStakable,
-			totalStakable: 0,
-		}));
-	};
-
-	const handleUnstake = () => {
-		setStats((prevStats) => ({
-			...prevStats,
-			isStaked: false,
-			totalStaked: 0,
-			totalStakable: prevStats.totalStaked,
-		}));
-	};
-
-	const percentMined = (stats.minedAmount / stats.totalPool) * 100;
-	const earningsPerSecond = (
-		(stats.totalStaked * stats.currentAPR) /
-		(365 * 24 * 60 * 60)
-	).toFixed(6);
+	// const percentMined = (stats.minedAmount / stats.totalPool) * 100;
+	// const earningsPerSecond = (
+	// 	(stats.totalStaked * stats.currentAPR) /
+	// 	(365 * 24 * 60 * 60)
+	// ).toFixed(6);
 
 	return (
 		<Card className="w-full max-w-md mx-auto my-6 border-none">
@@ -64,8 +59,8 @@ function MiningDashboard({ user }: { user: User }) {
 				<OctaneSwapLogo
 					size={128}
 					variant={1}
-					animated={stats.isStaked ? true : false}
-					className={`${stats.isStaked && "animate-spin spin-out-12"}`}
+					animated={isStaking ? true : false}
+					className={`${isStaking && "animate-spin spin-out-12"}`}
 				/>
 				<CardTitle className="text-2xl font-bold mt-4 flex items-center gap-2"></CardTitle>
 			</CardHeader>
@@ -85,11 +80,11 @@ function MiningDashboard({ user }: { user: User }) {
 					<Card>
 						<CardContent className="p-4">
 							<p className="text-sm text-muted-foreground">Total Staked</p>
-							<p className="text-2xl font-bold">{stats.totalStaked} pOCT</p>
+							<p className="text-2xl font-bold">{totalStaked} pOCT</p>
 						</CardContent>
 					</Card>
 				</div>
-
+				{/* 
 				<div>
 					<div className="flex justify-between items-center mb-2">
 						<span className="text-sm font-medium">Current APR</span>
@@ -102,11 +97,11 @@ function MiningDashboard({ user }: { user: User }) {
 							Earning approximately {earningsPerSecond} pOCT per second
 						</p>
 					)}
-				</div>
+				</div> */}
 
 				<Separator />
 
-				<div>
+				{/* <div>
 					<div className="flex justify-between items-center mb-2">
 						<span className="text-sm font-medium">Total Pool</span>
 						<span className="text-sm font-medium">
@@ -120,29 +115,63 @@ function MiningDashboard({ user }: { user: User }) {
 							<span>{percentMined.toFixed(2)}%</span>
 						</div>
 					</div>
-				</div>
+				</div> */}
 
 				<div className="flex justify-center">
-					{stats.isStaked ? (
-						<div className="space-y-2 w-full">
-							<Badge
-								variant="secondary"
-								className="text-primary py-2 px-4 w-full flex justify-center items-center">
-								<Coins className="w-4 h-4 mr-2" />
-								Currently Staking
-							</Badge>
-							<Button
-								onClick={handleUnstake}
-								variant="outline"
-								className="w-full">
-								Unstake
-							</Button>
-						</div>
+					{hasClaimableRewards ? (
+						<Button disabled={isStaking} className="w-full">
+							{isStaking ? "Claiming..." : "Claim Rewards"}
+						</Button>
 					) : (
-						<Button onClick={async () => await stake()} className="w-full">
-							Stake Now
+						<Button onClick={stake} disabled={isStaking} className="w-full">
+							{isStaking ? "Staking..." : "Stake All"}
 						</Button>
 					)}
+					{isStakeError && (
+						<p className="text-red-500">Error: {stakeError?.message}</p>
+					)}
+					{isStakeSuccess && (
+						<p className="text-green-500">Staking successful!</p>
+					)}
+
+					<Dialog>
+						<DialogTrigger asChild>
+							<Button variant="outline">View All Pools</Button>
+						</DialogTrigger>
+						<DialogContent>
+							<DialogHeader>
+								<DialogTitle>Your Staking Pools</DialogTitle>
+								<DialogDescription>
+									Here&apos;s a list of all your staking pools and their status.
+								</DialogDescription>
+							</DialogHeader>
+							<div className="space-y-4">
+								{positionsInfo.map((position) => (
+									<div key={position.id} className="border p-4 rounded">
+										<p>Pool ID: {position.poolId}</p>
+										<p>Amount Staked: {Number(position.amount)} pOCT</p>
+										<p>Rewards: {Number(position.rewards)} pOCT</p>
+										<p>
+											Status:{" "}
+											{position.isEnded
+												? "Ended"
+												: position.isActive
+												? "Active"
+												: "Not Started"}
+										</p>
+										{(position.isEnded || Number(position.rewards) > 0) && (
+											<Button
+												onClick={() => claim({ positionId: position.id })}
+												disabled={isClaiming}
+												className="mt-2">
+												{isClaiming ? "Claiming..." : "Claim Rewards"}
+											</Button>
+										)}
+									</div>
+								))}
+							</div>
+						</DialogContent>
+					</Dialog>
 				</div>
 			</CardContent>
 		</Card>

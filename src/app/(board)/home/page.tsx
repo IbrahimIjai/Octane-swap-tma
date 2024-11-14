@@ -7,7 +7,6 @@ import CTAButtons from "./components/cta-buttons";
 import History from "./components/history";
 import MiningDashboard from "./components/mining-dashboard";
 import { useUser } from "@/hooks/api/useUser";
-import { useUserStake } from "@/hooks/api/useUserStakeFn";
 import MiningDashboardSkeleton from "@/components/loaders/dashboard-loader";
 
 export default function Home() {
@@ -21,6 +20,8 @@ export default function Home() {
 		userError,
 		isUserError,
 	} = useUser();
+
+	console.log({ userData });
 
 	const isLoading = isUserLoading || !userData;
 	// const testloading = false;

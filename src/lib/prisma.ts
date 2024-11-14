@@ -1,5 +1,3 @@
-
-
 import { PrismaClient } from "@prisma/client/edge";
 import { withAccelerate } from "@prisma/extension-accelerate";
 
@@ -14,3 +12,4 @@ declare global {
 export const prisma = globalThis.prismaGlobal ?? prismaClientSingleton();
 
 if (process.env.NODE_ENV !== "production") globalThis.prismaGlobal = prisma;
+

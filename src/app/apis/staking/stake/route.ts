@@ -1,48 +1,57 @@
 import { prisma } from "@/lib/prisma";
-import { StakingCalculator } from "@/utils/staking-protocol";
+import { poolInfo, StakingCalculator } from "@/utils/staking-protocol-helpers";
+import { Prisma } from "@prisma/client";
+import { error } from "console";
 import { NextResponse } from "next/server";
-
+const { Decimal } = Prisma;
+export const runtime = "edge";
 export async function POST(req: Request) {
 	try {
-		const { userId, poolId, amount } = await req.json();
+		const { userId, amount } = await req.json();
+
+		console.log({ amount, userId });
+		if (!amount || new Decimal(amount).equals(0)) {
+			return NextResponse.json({ error: "Cannot stake 0" }, { status: 400 });
+		}
+
+		//get latest pool
+
+		const { latestPool } = await poolInfo.getPools();
+		console.log({ latestPool });
+		const poolId = latestPool.id;
 
 		// Start transaction
 		const result = await prisma.$transaction(async (tx) => {
-			// Update user's rewards before staking
-			const position = await tx.stakingPosition.findUnique({
-				where: { userId_poolId: { userId, poolId } },
+			await StakingCalculator.updateReward(userId, poolId);
+
+			// Check user balance
+			const __user = await tx.user.findUnique({
+				where: { id: userId },
 			});
 
-			if (position) {
-				const earned = await StakingCalculator.calculateEarned(position.id);
-				await tx.stakingPosition.update({
-					where: { id: position.id },
-					data: {
-						rewards: earned,
-						lastUpdateTime: new Date(),
-					},
-				});
+			console.log();
+			if (
+				!__user ||
+				__user.poctBalance.plus(__user.telegramAgeOCTRewards).lessThan(amount)
+			) {
+				throw new Error("Insufficient balance");
 			}
 
-			// Update user balance
-			const user = await tx.user.update({
+			// Deduct from user's balance
+			await tx.user.update({
 				where: { id: userId },
 				data: {
 					poctBalance: { decrement: amount },
 				},
 			});
 
-			if (user.poctBalance.lt(0)) {
-				throw new Error("Insufficient balance");
-			}
-
-			// Update or create staking position
-			const updatedPosition = await tx.stakingPosition.upsert({
+			// Update user's staking position
+			const __position = await tx.stakingPosition.upsert({
 				where: { userId_poolId: { userId, poolId } },
 				create: {
 					userId,
 					poolId,
-					amount,
+					amount: new Decimal(amount),
 					lastUpdateTime: new Date(),
 				},
 				update: {
@@ -51,23 +60,24 @@ export async function POST(req: Request) {
 				},
 			});
 
-			// Update pool total supply
+			// Update pool's total supply
 			await tx.stakingPool.update({
 				where: { id: poolId },
 				data: {
 					totalSupply: { increment: amount },
-					lastUpdateTime: new Date(),
 				},
 			});
 
-			return updatedPosition;
+			return __position;
 		});
+
+		console.log({ result });
 
 		return NextResponse.json(result);
 	} catch (error) {
 		return NextResponse.json(
 			{ error: error instanceof Error ? error.message : "Unknown error" },
-			{ status: 400 },
+			{ status: 500 },
 		);
 	}
 }

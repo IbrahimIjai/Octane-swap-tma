@@ -1,49 +1,65 @@
 import { prisma } from "@/lib/prisma";
-import { StakingCalculator } from "@/utils/staking-protocol";
+import { StakingCalculator } from "@/utils/staking-protocol-helpers";
+import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 
-
+const { Decimal } = Prisma;
 
 export async function POST(req: Request) {
 	try {
-		const { userId, poolId } = await req.json();
+		const { userId, poolId, amount } = await req.json();
+
+		// if (!amount || new Decimal(amount).equals(0)) {
+		// 	return NextResponse.json({ error: "Cannot withdraw 0" }, { status: 400 });
+		// }
 
 		const result = await prisma.$transaction(async (tx) => {
-			const position = await tx.stakingPosition.findUnique({
-				where: { userId_poolId: { userId, poolId } },
-			});
+			// Update rewards
+			const { pool } = await StakingCalculator.updateReward(userId, poolId);
+			const position = pool.positions.find(
+				(position) => position.userId === userId,
+			);
 
 			if (!position) {
-				throw new Error("No staking position found");
+				return NextResponse.json(
+					{ error: "Position not found" },
+					{ status: 500 },
+				);
+				// throw new Error("Insufficient staked balance");
 			}
 
-			const earned = await StakingCalculator.calculateEarned(position.id);
-
-			// Update user balance with earned rewards
-			await tx.user.update({
-				where: { id: userId },
-				data: {
-					poctBalance: { increment: earned },
-				},
-			});
-
-			// Reset position rewards
+			// Update position
 			await tx.stakingPosition.update({
 				where: { id: position.id },
 				data: {
-					rewards: 0,
-					lastUpdateTime: new Date(),
+					amount: { decrement: amount },
 				},
 			});
 
-			return earned;
+			// Update pool's total supply
+			await tx.stakingPool.update({
+				where: { id: poolId },
+				data: {
+					totalSupply: { decrement: amount },
+				},
+			});
+
+			// Return tokens to user's balance
+			await tx.user.update({
+				where: { id: userId },
+				data: {
+					poctBalance: { increment: amount },
+				},
+			});
+
+			return position;
 		});
 
-		return NextResponse.json({ claimed: result });
+		return NextResponse.json(result);
 	} catch (error) {
 		return NextResponse.json(
 			{ error: error instanceof Error ? error.message : "Unknown error" },
-			{ status: 400 },
+			{ status: 500 },
 		);
 	}
 }

@@ -37,16 +37,19 @@ model User {
 }
 
 model StakingPool {
-  id             String            @id @unique @default(cuid())
-  totalSupply    Decimal           @default(0)
-  rewardRate     Decimal // Rewards per second
-  rewardAmount   Decimal // Total rewards for the pool
-  startTime      DateTime // Pool start time
-  endTime        DateTime // Pool end time
-  lastUpdateTime DateTime // Last reward calculation timestamp
-  positions      StakingPosition[]
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  id                   String            @id @unique @default(cuid())
+  totalSupply          Decimal           @default(0)
+  rewardRate           Decimal           @default(0) // Rewards per second 
+  rewardAmount         Decimal // Total rewards for the pool
+  rewardPerTokenStored Decimal
+  startTime            DateTime // Pool start time
+  endTime              DateTime // Pool end time
+  rewardsDuration      Decimal
+  lastUpdateTime       DateTime // Last reward calculation timestamp
+  periodFinish         Decimal // Matches Synthetix's periodFinish
+  positions            StakingPosition[]
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
 }
 
 model StakingPosition {

@@ -7,6 +7,7 @@ import { useIsMounted } from "connectkit";
 import axios from "axios";
 import { User } from "@prisma/client";
 import { useRouter } from "next/navigation";
+import { UserWithStaking } from "./staking-game";
 
 export const useUser = () => {
 	const initData = useInitData();
@@ -28,7 +29,7 @@ export const useUser = () => {
 	} = useQuery({
 		queryKey: ["user", telegramId],
 		queryFn: async () => {
-			const response = await axios.get<User>(
+			const response = await axios.get<UserWithStaking>(
 				`/apis/user?telegramId=${telegramId}`,
 			);
 			return response.data;
