@@ -8,6 +8,7 @@ import { StakingPool, StakingPosition, User } from "@prisma/client";
 export interface UserWithStaking extends User {
 	StakingPositions: (StakingPosition & { pool: StakingPool })[];
 }
+
 export const useUserStake = ({
 	userWithStaking,
 }: {
@@ -37,7 +38,7 @@ export const useUserStake = ({
 	});
 
 	const claimMutation = useMutation({
-		mutationFn: async (data: { userId: string; positionId: string }) =>
+		mutationFn: async (data: { userId: string; poolId: string }) =>
 			axios.post("/apis/staking/claim", data),
 		onError(error: any) {
 			toast({
@@ -60,13 +61,15 @@ export const useUserStake = ({
 			Number(userWithStaking.poctBalance) +
 			Number(userWithStaking.telegramAgeOCTRewards)
 		).toString();
+
+		console.log(amount);
 		return stakeMutation.mutateAsync({ userId: userWithStaking.id, amount });
 	};
 
-	const claim = async ({ positionId }: { positionId: string }) => {
+	const claim = async ({ poolId }: { poolId: string }) => {
 		return claimMutation.mutateAsync({
 			userId: userWithStaking.id,
-			positionId,
+			poolId,
 		});
 	};
 

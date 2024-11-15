@@ -1,61 +1,12 @@
 import { prisma } from "@/lib/prisma";
-// import { Decimal } from "@prisma/client/runtime/library.js";
 import { Prisma, StakingPool } from "@prisma/client/edge";
-// Use Prisma.Decimal instead of Decimal from runtime
 
 const { Decimal } = Prisma;
-// export class StakingCalculator {
-// 	static async calculateRewardPerToken(poolId: string) {
-// 		const pool = await prisma.stakingPool.findUnique({
-// 			where: { id: poolId },
-// 			select: {
-// 				totalSupply: true,
-// 				rewardRate: true,
-// 				lastUpdateTime: true,
-// 				endTime: true,
-// 			},
-// 		});
 
-// 		if (!pool || pool.totalSupply.equals(0)) {
-// 			return new Decimal(0);
-// 		}
-
-// 		const currentTime = new Date();
-// 		const lastTimeRewardApplicable =
-// 			currentTime > pool.endTime ? pool.endTime : currentTime;
-
-// 		const timeDelta =
-// 			lastTimeRewardApplicable.getTime() - pool.lastUpdateTime.getTime();
-// 		const timeInSeconds = timeDelta / 1000;
-
-// 		return pool.rewardRate.mul(timeInSeconds).mul(1e18).div(pool.totalSupply);
-// 	}
-
-// 	static async calculateEarned(positionId: string) {
-// 		const position = await prisma.stakingPosition.findUnique({
-// 			where: { id: positionId },
-// 			include: { pool: true },
-// 		});
-
-// 		if (!position) {
-// 			return new Decimal(0);
-// 		}
-
-// 		const rewardPerToken = await this.calculateRewardPerToken(position.poolId);
-
-// 		return position.amount
-// 			.mul(rewardPerToken.sub(position.rewardPerTokenPaid))
-// 			.div(1e18)
-// 			.add(position.rewards);
-// 	}
-// }
 
 export class StakingCalculator {
-	// Replicates rewardPerToken() from Synthetix
 	static async calculateRewardPerTokenStored(pool: StakingPool) {
-		// const pool = await prisma.stakingPool.findUnique({
-		// 	where: { id: poolId },
-		// });
+	
 
 		if (!pool || pool.totalSupply.equals(0)) {
 			return new Decimal(0);
@@ -106,8 +57,16 @@ export class StakingCalculator {
 		});
 
 		if (!pool) {
-			throw new Error("Pool not found");
+			console.log("DID NOT found pool andn position");
+			throw new Error("Pool and Position not found");
 		}
+
+
+		const position = pool.positions.find(
+			(position) => position.userId === userId,
+		);
+
+		console.log("found pool andn position")
 
 		const rewardPerTokenStored = await this.calculateRewardPerTokenStored(pool);
 		const lastTimeRewardApplicable = Math.min(
@@ -126,10 +85,6 @@ export class StakingCalculator {
 
 		// If there's a user, update their position
 		if (userId) {
-			const position = await prisma.stakingPosition.findUnique({
-				where: { userId_poolId: { userId, poolId } },
-			});
-
 			if (position) {
 				const earned = await this.calculateEarned(position.id);
 				await prisma.stakingPosition.update({
@@ -145,6 +100,7 @@ export class StakingCalculator {
 
 		return {
 			pool,
+			position,
 			rewardPerTokenStored,
 			lastTimeRewardApplicable,
 		};

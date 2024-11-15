@@ -2,9 +2,17 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { Prisma } from "@prisma/client/edge";
+import { PoolCategory, PoolName, Prisma } from "@prisma/client/edge";
 
 const { Decimal } = Prisma;
+
+const createPoolSchema = z.object({
+	poolName: z.nativeEnum(PoolName),
+	category: z.nativeEnum(PoolCategory),
+	rewardAmount: z.number().positive(),
+	startTime: z.string().datetime(),
+	endTime: z.string().datetime(),
+});
 
 export async function GET() {
 	try {
@@ -29,38 +37,29 @@ export async function GET() {
 
 export async function POST(req: Request) {
 	try {
-		const {
-			rewardAmount, // Total rewards for the pool
-			startTime, // Pool start timestamp
-			endTime,
-			duration, // Duration in days
-			rewardRate, // Opytional: rewards per second. If not provided, calculated from rewardAmount and duration
-		} = await req.json();
+		const body = await req.json();
+		const validatedData = createPoolSchema.parse(body);
+		console.log({ body });
+		const { poolName, category, rewardAmount, startTime, endTime } =
+			validatedData;
 
-		// Convert duration to seconds
-		const durationInSeconds = 3 * 24 * 60 * 60;
-		console.log("i am in....");
-		const calculatedRewardRate =
-			rewardRate || new Decimal(rewardAmount).div(durationInSeconds);
+		const startDate = new Date(startTime);
+		const endDate = new Date(endTime);
+		const durationInSeconds = (endDate.getTime() - startDate.getTime()) / 1000;
 
-		console.log({
-			rewardAmount: new Decimal(rewardAmount),
-			rewardRate: calculatedRewardRate,
-			startTime: new Date(startTime),
-			endTime: new Date(endTime),
-			lastUpdateTime: new Date(startTime),
-			rewardsDuration: new Decimal(durationInSeconds),
-			periodFinish: new Decimal(durationInSeconds),
-			totalSupply: new Decimal(0),
-			rewardPerTokenStored: new Decimal(0),
-		});
+		const calculatedRewardRate = new Decimal(rewardAmount).div(
+			durationInSeconds,
+		);
+
 		const pool = await prisma.stakingPool.create({
 			data: {
+				poolName,
+				category,
 				rewardAmount: new Decimal(rewardAmount),
 				rewardRate: calculatedRewardRate,
-				startTime: new Date(startTime),
-				endTime: new Date(endTime),
-				lastUpdateTime: new Date(startTime),
+				startTime: startDate,
+				endTime: endDate,
+				lastUpdateTime: startDate,
 				rewardsDuration: new Decimal(durationInSeconds),
 				periodFinish: new Decimal(durationInSeconds),
 				totalSupply: new Decimal(0),
@@ -68,10 +67,11 @@ export async function POST(req: Request) {
 			},
 		});
 
-		console.log({ pool, msg: "finished" });
-
 		return NextResponse.json(pool);
 	} catch (error) {
+		if (error instanceof z.ZodError) {
+			return NextResponse.json({ error: error.errors }, { status: 400 });
+		}
 		return NextResponse.json(
 			{ error: error instanceof Error ? error.message : "Unknown error" },
 			{ status: 500 },

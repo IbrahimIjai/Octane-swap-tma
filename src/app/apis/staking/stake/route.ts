@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { poolInfo, StakingCalculator } from "@/utils/staking-protocol-helpers";
+import {  StakingCalculator } from "@/utils/staking-protocol-helpers";
 import { Prisma } from "@prisma/client";
-import { error } from "console";
 import { NextResponse } from "next/server";
 const { Decimal } = Prisma;
 export const runtime = "edge";
@@ -16,28 +15,40 @@ export async function POST(req: Request) {
 
 		//get latest pool
 
-		const { latestPool } = await poolInfo.getPools();
-		console.log({ latestPool });
+		const latestPool = await prisma.stakingPool.findFirst({
+			where: {
+				startTime: { lte: new Date() },
+				endTime: { gt: new Date() },
+			},
+			orderBy: { startTime: "desc" },
+		});
+
+		if (!latestPool) {
+			return NextResponse.json(
+				{ error: "No active pool found" },
+				{ status: 400 },
+			);
+		}
+
+		// const { latestPool } = await poolInfo.getPools();
+		// console.log({ latestPool });
 		const poolId = latestPool.id;
 
 		// Start transaction
 		const result = await prisma.$transaction(async (tx) => {
 			await StakingCalculator.updateReward(userId, poolId);
 
-			// Check user balance
-			const __user = await tx.user.findUnique({
+			const user = await tx.user.findUnique({
 				where: { id: userId },
 			});
 
-			console.log();
 			if (
-				!__user ||
-				__user.poctBalance.plus(__user.telegramAgeOCTRewards).lessThan(amount)
+				!user ||
+				user.poctBalance.plus(user.telegramAgeOCTRewards).lessThan(amount)
 			) {
 				throw new Error("Insufficient balance");
 			}
 
-			// Deduct from user's balance
 			await tx.user.update({
 				where: { id: userId },
 				data: {
@@ -45,8 +56,7 @@ export async function POST(req: Request) {
 				},
 			});
 
-			// Update user's staking position
-			const __position = await tx.stakingPosition.upsert({
+			const position = await tx.stakingPosition.upsert({
 				where: { userId_poolId: { userId, poolId } },
 				create: {
 					userId,
@@ -60,7 +70,6 @@ export async function POST(req: Request) {
 				},
 			});
 
-			// Update pool's total supply
 			await tx.stakingPool.update({
 				where: { id: poolId },
 				data: {
@@ -68,7 +77,7 @@ export async function POST(req: Request) {
 				},
 			});
 
-			return __position;
+			return position;
 		});
 
 		console.log({ result });
