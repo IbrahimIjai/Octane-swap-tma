@@ -9,6 +9,8 @@ export interface UserWithStaking extends User {
 	StakingPositions: (StakingPosition & { pool: StakingPool })[];
 }
 
+//Depreciated
+
 export const useUserStake = ({
 	userWithStaking,
 }: {
@@ -33,7 +35,6 @@ export const useUserStake = ({
 				title: "Staking successful",
 				description: "Your tokens have been staked successfully.",
 			});
-			queryClient.invalidateQueries(["user", userWithStaking.id, "staking"]);
 		},
 	});
 
@@ -50,9 +51,8 @@ export const useUserStake = ({
 		onSuccess: (data) => {
 			toast({
 				title: "Claim successful",
-				description: `You've successfully claimed ${data.claimedAmount} pOCT from the pool.`,
+				description: `You've successfully claimed  NaN pOCT from the pool.`,
 			});
-			queryClient.invalidateQueries(["user", userWithStaking.id, "staking"]);
 		},
 	});
 
@@ -71,15 +71,6 @@ export const useUserStake = ({
 			userId: userWithStaking.id,
 			poolId,
 		});
-	};
-
-	const getTotalStaked = () => {
-		return (
-			userWithStaking?.StakingPositions.reduce(
-				(total, position) => total + Number(position.amount),
-				0,
-			) || 0
-		);
 	};
 
 	const getActivePool = () => {
@@ -131,7 +122,7 @@ export const useUserStake = ({
 
 	console.log({
 		userWithStaking,
-		totalStaked: getTotalStaked(),
+		// totalStaked: getTotalStaked(),
 		poolsInfo: getUserPositionsInfo(),
 	});
 
@@ -143,7 +134,9 @@ export const useUserStake = ({
 		isStakeSuccess: stakeMutation.isSuccess,
 		isStakeError: stakeMutation.isError,
 		stakeError: stakeMutation.error,
-		totalStaked: getTotalStaked(),
+
+
+		// totalStaked: getTotalStaked(),
 		isCurrentlyStaking,
 		hasClaimableRewards,
 		positionsInfo: getUserPositionsInfo(),

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { useToast } from "../use-toast";
 import { Prisma, StakingPool, StakingPosition, User } from "@prisma/client";
+import { SECONDS_PER_YEAR } from "@/lib/config";
 
 const { Decimal } = Prisma;
 // Types
@@ -13,6 +14,7 @@ interface PoolWithPosition extends StakingPool {
 interface PoolStats {
 	totalRewardsMinted: number;
 	progressPercentage: number;
+	totalStaked: number;
 	isActive: boolean;
 	timeUntilStart?: number;
 	timeUntilEnd?: number;
@@ -79,6 +81,11 @@ export const useStakingProtocol = (userId?: string) => {
 		const progressPercentage = Number(
 			totalRewardsMinted.div(pool.rewardAmount).times(100),
 		);
+		const totalStaked =
+			pool.positions.reduce(
+				(total, position) => total + Number(position.amount),
+				0,
+			) || 0;
 
 		const isActive = now >= startTime && now <= endTime;
 		const timeUntilStart = startTime > now ? startTime - now : 0;
@@ -86,6 +93,7 @@ export const useStakingProtocol = (userId?: string) => {
 
 		return {
 			totalRewardsMinted: Number(totalRewardsMinted),
+			totalStaked,
 			progressPercentage,
 			isActive,
 			timeUntilStart,
@@ -101,19 +109,21 @@ export const useStakingProtocol = (userId?: string) => {
 		if (!pool || !userId) return new Decimal(0);
 
 		const userPosition = pool.positions.find((pos) => pos.userId === userId);
-		if (!userPosition || pool.totalSupply.equals(0)) return new Decimal(0);
+		if (!userPosition || Number(pool.totalSupply) === 0) return 0;
 
 		// Calculate user's share of the pool
-		const userShare = userPosition.amount.div(pool.totalSupply);
+		const userShare = Number(userPosition.amount) / Number(pool.totalSupply);
 
 		// Calculate rewards per second
-		return pool.rewardRate.mul(userShare);
+		return Number(pool.rewardRate) * Number(userShare);
 	};
 
 	// Get user's positions
-	const { data: userPositions, isLoading: isLoadingPositions } = useQuery<
-		StakingPosition[]
-	>({
+	const {
+		data: userPositions,
+		isLoading: isLoadingPositions,
+		refetch: refetchUserPosition,
+	} = useQuery<StakingPosition[]>({
 		queryKey: ["userPositions", userId],
 		queryFn: async () => {
 			if (!userId) return [];
@@ -140,7 +150,7 @@ export const useStakingProtocol = (userId?: string) => {
 		}
 
 		const SECONDS_PER_YEAR = new Decimal(31536000);
-		const rewardsPerYear = pool.rewardRate.mul(SECONDS_PER_YEAR);
+		const rewardsPerYear = new Decimal(pool.rewardRate).mul(SECONDS_PER_YEAR);
 		const apr = rewardsPerYear.div(pool.totalSupply).mul(100);
 
 		return Number(apr);
@@ -153,12 +163,11 @@ export const useStakingProtocol = (userId?: string) => {
 		const userPosition = pool.positions.find((pos) => pos.userId === userId);
 		if (!userPosition || new Decimal(pool?.totalSupply).equals(0)) return 0;
 
-		const userShare = userPosition.amount.div(pool.totalSupply);
-		const SECONDS_PER_YEAR = new Decimal(31536000);
-		const userRewardsPerYear = pool.rewardRate
-			.mul(SECONDS_PER_YEAR)
-			.mul(userShare);
-		const userAPR = userRewardsPerYear.div(userPosition.amount).mul(100);
+		const userShare = Number(userPosition?.amount) / Number(pool.totalSupply);
+
+		const userRewardsPerYear =
+			Number(pool.rewardRate) * SECONDS_PER_YEAR * userShare;
+		const userAPR = userRewardsPerYear / (Number(userPosition.amount) * 100);
 
 		return Number(userAPR);
 	};

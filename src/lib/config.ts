@@ -43,3 +43,4 @@ export const MAX_ACCOUNT_AGE_DAYS = 365 * 2; // Cap at 2 years for fairness
 export const MIN_ACCOUNT_AGE_DAYS = 30; // Minimum age requirement
 export const DEFAULT_TWITTER_USERNAME = "octaneswap";
 export const TOTAL_POOL_SIZE= 1_000_000
+export const SECONDS_PER_YEAR = 31536000;

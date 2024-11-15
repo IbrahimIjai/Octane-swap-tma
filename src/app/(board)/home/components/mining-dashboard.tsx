@@ -29,6 +29,8 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useUser } from "@/hooks/api/useUser";
+import MiningDashboardSkeleton from "@/components/loaders/dashboard-loader";
 
 const categoryIcons = {
 	SPEED: <Zap className="w-4 h-4" />,
@@ -45,21 +47,33 @@ interface MiningStats {
 	isStaked: boolean;
 }
 
-function MiningDashboard({ user }: { user: UserWithStaking }) {
+function MiningDashboard() {
 	const {
-		stake,
+		isUserReady,
+		authDate,
+		//fns
 		claim,
-		isStaking,
 		isClaiming,
+		isClaimingSuccess,
+		isClaimError,
+
+		stake,
+		isStaking,
 		isStakeSuccess,
 		isStakeError,
 		stakeError,
-		totalStaked,
+
+		//data
 		isCurrentlyStaking,
 		hasClaimableRewards,
 		positionsInfo,
-		userWithStaking,
-	} = useUserStake({ userWithStaking: user });
+
+		userData,
+		isUserLoading,
+		isFetchingUserSuccess,
+		userError,
+		isUserError,
+	} = useUser();
 
 	const {
 		pools,
@@ -76,10 +90,14 @@ function MiningDashboard({ user }: { user: UserWithStaking }) {
 
 		calculatePoolStats,
 		calculateUserRewardPerSecond,
-	} = useStakingProtocol();
+	} = useStakingProtocol(userData?.id);
+
+	if (isUserLoading || !userData) {
+		return <MiningDashboardSkeleton />;
+	}
 
 	const userBalance =
-		Number(user.poctBalance) + Number(user.telegramAgeOCTRewards);
+		Number(userData.poctBalance) + Number(userData.telegramAgeOCTRewards);
 
 	console.log({ currentPool, pools, userBalance });
 
@@ -109,7 +127,7 @@ function MiningDashboard({ user }: { user: UserWithStaking }) {
 						<CardContent className="p-4">
 							<p className="text-sm text-muted-foreground">Total Staked</p>
 							<p className="text-2xl font-bold">
-								{totalStaked.toFixed(2)} pOCT
+								{currentPoolStats?.totalStaked.toFixed(2)} pOCT
 							</p>
 						</CardContent>
 					</Card>
@@ -192,122 +210,6 @@ function MiningDashboard({ user }: { user: UserWithStaking }) {
 						</div>
 					</>
 				)}
-				{/* <div>
-					<div className="flex justify-between items-center mb-2">
-						<span className="text-sm font-medium">Current APR</span>
-						<Badge variant="secondary" className="text-primary">
-							{currentPoolAPR}% <ArrowUpRight className="w-3 h-3 ml-1" />
-						</Badge>
-					</div>
-					{isCurrentlyStaking && (
-						<p className="text-xs text-muted-foreground">
-							Earning approximately {Number(userRewardPerSecond)} pOCT per
-							second
-						</p>
-					)}
-				</div> */}
-				{/* 
-				<Separator />
-				{currentPool && currentPoolStats && (
-					<div>
-						<div className="flex justify-between items-center mb-2">
-							<span className="text-sm font-medium">Total Pool</span>
-							<span className="text-sm font-medium">
-								{TOTAL_POOL_SIZE} pOCT
-							</span>
-						</div>
-						<div className="space-y-2">
-							<Progress
-								value={currentPoolStats?.progressPercentage}
-								className="w-full"
-							/>
-							<div className="flex justify-between text-xs text-muted-foreground">
-								<span>
-									Mined: {currentPoolStats?.totalRewardsMinted.toLocaleString()}{" "}
-									pOCT
-								</span>
-								<span>{currentPoolStats?.progressPercentage.toFixed(2)}%</span>
-							</div>
-						</div>
-					</div>
-				)} */}
-				{/* 
-				<div className="flex justify-center">
-					{hasClaimableRewards ? (
-						<Dialog>
-							<DialogTrigger asChild>
-								<Button variant="outline">View All Pools</Button>
-							</DialogTrigger>
-							<DialogContent className="sm:max-w-[425px]">
-								<DialogHeader>
-									<DialogTitle>Your Staking Pools</DialogTitle>
-									<DialogDescription>
-										Here&apos;s a list of all your staking pools and their
-										status.
-									</DialogDescription>
-								</DialogHeader>
-								<div className="grid gap-4 py-4">
-									{positionsInfo.map((position) => (
-										<Card key={position.id}>
-											<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-												<CardTitle className="text-sm font-medium">
-													{position.pool.poolName}
-												</CardTitle>
-												<Badge
-													variant={position.isActive ? "default" : "secondary"}>
-													{position.isActive ? (
-														categoryIcons[position.pool.category]
-													) : (
-														<Check className="w-4 h-4" />
-													)}
-													{position.isActive ? position.pool.category : "Ended"}
-												</Badge>
-											</CardHeader>
-											<CardContent>
-												<div className="flex justify-between items-center mb-2">
-													<span className="text-sm text-muted-foreground">
-														Staked:
-													</span>
-													<span className="font-semibold">
-														{Number(position.amount)} pOCT
-													</span>
-												</div>
-												<div className="flex justify-between items-center mb-4">
-													<span className="text-sm text-muted-foreground">
-														Rewards:
-													</span>
-													<span className="font-semibold">
-														{Number(position.rewards)} pOCT
-													</span>
-												</div>
-												{(position.isEnded || Number(position.rewards) > 0) && (
-													<Button
-														onClick={() => claim({ poolId: position.poolId })}
-														disabled={isClaiming}
-														className="w-full">
-														{isClaiming ? "Claiming..." : "Claim Rewards"}
-														<ArrowRight className="w-4 h-4 ml-2" />
-													</Button>
-												)}
-											</CardContent>
-										</Card>
-									))}
-								</div>
-							</DialogContent>
-						</Dialog>
-					) : (
-						<Button onClick={stake} disabled={isStaking} className="w-full">
-							{isStaking ? "Staking..." : "Stake All"}
-						</Button>
-					)}
-					{isStakeError && (
-						<p className="text-red-500">Error: {stakeError?.message}</p>
-					)}
-
-					{isStakeSuccess && (
-						<p className="text-green-500">Staking successful!</p>
-					)}
-				</div> */}
 
 				{hasClaimableRewards && (
 					<Dialog>

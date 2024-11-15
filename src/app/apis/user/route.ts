@@ -1,14 +1,7 @@
 // pages/api/user/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-// import cors from "cors";
 
-// // CORS middleware
-// const corsMiddleware = cors({
-// 	methods: ["GET", "POST"],
-// 	origin: "*", // Replace with your frontend URL in production
-// 	optionsSuccessStatus: 200,
-// });
 
 export async function GET(req: NextRequest) {
 	// await corsMiddleware(req, NextResponse);

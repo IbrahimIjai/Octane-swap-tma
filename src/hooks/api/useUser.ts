@@ -8,24 +8,27 @@ import axios from "axios";
 import { User } from "@prisma/client";
 import { useRouter } from "next/navigation";
 import { UserWithStaking } from "./staking-game";
+import { useToast } from "../use-toast";
 
 export const useUser = () => {
 	const initData = useInitData();
 	const isMounted = useIsMounted();
 	const queryClient = useQueryClient();
+	const { toast } = useToast();
 
 	const { push } = useRouter();
 	const telegramId = initData?.user?.id.toString();
 	const authDate = initData?.authDate;
 
 	const isUserReady = isMounted && initData?.user ? true : false;
-
+	//GET USER
 	const {
 		data: userData,
 		isLoading: isUserLoading,
 		error: userError,
 		isError: isUserError,
 		isSuccess: isFetchingUserSuccess,
+		refetch: refetchUser,
 	} = useQuery({
 		queryKey: ["user", telegramId],
 		queryFn: async () => {
@@ -37,6 +40,47 @@ export const useUser = () => {
 		enabled: isUserReady,
 	});
 
+	// UTILS
+	const getActiveStakingPools = () => {
+		const now = new Date();
+		return (
+			userData?.StakingPositions?.filter(
+				(position) =>
+					Number(position.amount) > 0 &&
+					new Date(position.pool.startTime) <= now &&
+					new Date(position.pool.endTime) > now,
+			) || []
+		);
+	};
+
+	const getClaimablePools = () => {
+		return (
+			userData?.StakingPositions?.filter(
+				(position) =>
+					Number(position.amount) > 0 || Number(position.rewards) > 0,
+			) || []
+		);
+	};
+	const getUserPositionsInfo = () => {
+		return (
+			userData?.StakingPositions.map((position) => ({
+				isEnded: new Date(position.pool.endTime) < new Date(),
+				isActive:
+					new Date(position.pool.startTime) <= new Date() &&
+					new Date(position.pool.endTime) > new Date(),
+
+				...position,
+			})) || []
+		);
+	};
+
+	//UTILS EXPORT
+
+	const hasClaimableRewards = getClaimablePools().length > 0;
+	const isCurrentlyStaking = getActiveStakingPools().length > 0;
+
+	//MUTATIONS
+
 	const createUserMutation = useMutation({
 		mutationFn: async (data: {
 			telegramId: string;
@@ -47,10 +91,50 @@ export const useUser = () => {
 		},
 		onSuccess: (data) => {
 			queryClient.setQueryData(["user", telegramId], data);
+			refetchUser();
 			push("/home");
 		},
 	});
 
+	const stakeMutation = useMutation({
+		mutationFn: async (data: { userId: string; amount: string }) =>
+			axios.post("/apis/staking/stake", data),
+		onError(error: any) {
+			toast({
+				variant: "destructive",
+				title: "Staking failed",
+				description: `There was a problem with your request: ${error.message}`,
+			});
+		},
+		onSuccess: () => {
+			refetchUser();
+			toast({
+				title: "Staking successful",
+				description: "Your tokens have been staked successfully.",
+			});
+		},
+	});
+
+	const claimMutation = useMutation({
+		mutationFn: async (data: { userId: string; poolId: string }) =>
+			axios.post("/apis/staking/claim", data),
+		onError(error: any) {
+			toast({
+				variant: "destructive",
+				title: "Claim failed",
+				description: `There was a problem with your request: ${error.message}`,
+			});
+		},
+		onSuccess: (data) => {
+			refetchUser();
+			toast({
+				title: "Claim successful",
+				description: `You've successfully claimed  NaN pOCT from the pool.`,
+			});
+		},
+	});
+
+	//ACTIONS FROM MUTATIONS
 	const createUser = async () => {
 		if (!isUserReady) {
 			throw new Error("User not ready");
@@ -65,7 +149,39 @@ export const useUser = () => {
 		});
 	};
 
+	const stake = async () => {
+		if (!userData) {
+			return toast({
+				variant: "destructive",
+				title: "Staking failed",
+				description: `There was a problem with your request: user not initalized`,
+			});
+		}
+		const amount = (
+			Number(userData.poctBalance) + Number(userData.telegramAgeOCTRewards)
+		).toString();
+
+		console.log(amount);
+		return stakeMutation.mutateAsync({ userId: userData.id, amount });
+	};
+
+	const claim = async ({ poolId }: { poolId: string }) => {
+		if (!userData || !poolId) {
+			return toast({
+				variant: "destructive",
+				title: "Staking failed",
+				description: `There was a problem with your request: user not initalized or Pool dosen't exist`,
+			});
+		}
+		return claimMutation.mutateAsync({
+			userId: userData.id,
+			poolId,
+		});
+	};
+
 	return {
+		
+
 		isUserReady,
 		authDate,
 
@@ -82,5 +198,22 @@ export const useUser = () => {
 		isFetchingUserSuccess,
 		isUserError,
 		userError,
+
+		isCurrentlyStaking,
+		hasClaimableRewards,
+		positionsInfo: getUserPositionsInfo(),
+
+		// stakings
+		stake,
+		isStaking: stakeMutation.isPending,
+		isStakeSuccess: stakeMutation.isSuccess,
+		isStakeError: stakeMutation.isError,
+		stakeError: stakeMutation.error,
+
+		//claiming
+		claim,
+		isClaiming: claimMutation.isPending,
+		isClaimingSuccess: claimMutation.isSuccess,
+		isClaimError: claimMutation.isError,
 	};
 };

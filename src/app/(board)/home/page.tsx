@@ -10,30 +10,11 @@ import { useUser } from "@/hooks/api/useUser";
 import MiningDashboardSkeleton from "@/components/loaders/dashboard-loader";
 
 export default function Home() {
-	const {
-		isUserReady,
-		authDate,
-
-		userData,
-		isUserLoading,
-		isFetchingUserSuccess,
-		userError,
-		isUserError,
-	} = useUser();
-
-	console.log({ userData });
-
-	const isLoading = isUserLoading || !userData;
-	// const testloading = false;
 	return (
 		<div className="relative  min-h-screen flex flex-col items-center">
 			<ConnectButton />
 
-			{isLoading ? (
-				<MiningDashboardSkeleton />
-			) : (
-				<MiningDashboard user={userData} />
-			)}
+			<MiningDashboard />
 
 			<CTAButtons />
 			<DailyTasks />

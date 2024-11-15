@@ -28,7 +28,7 @@ function Notifications({
 	if (!isVisible || !isMounted) return null;
 
 	return (
-		<div className="w-full bg-gradient-to-r from-primary/40 to-secondary/40 text-white fixed inset-x-0 top-0 z-30">
+		<div className="w-full backdrop-blur-md bg-gradient-to-r from-primary/60 to-secondary/60 text-white fixed inset-x-0 top-0 z-30">
 			<div className="container mx-auto px-4">
 				<Alert variant="default" className="my-2 pr-12 relative ">
 					<Sparkles className="h-5 w-5 text-yellow-300 mr-2 animate-pulse" />
