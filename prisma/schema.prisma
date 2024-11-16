@@ -19,8 +19,8 @@ model User {
 
   //socials
   telegramId      String? @unique
-  twitterUsername String? @unique @default("octaneswap")
-  refferalLink    String? @unique @default("buji")
+  twitterUsername String? @unique
+  refferalLink    String? @unique
 
   //web3
   address String? @unique // User's wallet address

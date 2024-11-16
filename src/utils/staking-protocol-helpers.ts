@@ -3,11 +3,8 @@ import { Prisma, StakingPool } from "@prisma/client/edge";
 
 const { Decimal } = Prisma;
 
-
 export class StakingCalculator {
 	static async calculateRewardPerTokenStored(pool: StakingPool) {
-	
-
 		if (!pool || pool.totalSupply.equals(0)) {
 			return new Decimal(0);
 		}
@@ -61,12 +58,13 @@ export class StakingCalculator {
 			throw new Error("Pool and Position not found");
 		}
 
-
 		const position = pool.positions.find(
 			(position) => position.userId === userId,
 		);
-
-		console.log("found pool andn position")
+		if (!position) {
+			throw new Error(" Position not found for userId");
+		}
+		console.log("found pool andn position");
 
 		const rewardPerTokenStored = await this.calculateRewardPerTokenStored(pool);
 		const lastTimeRewardApplicable = Math.min(
@@ -74,27 +72,30 @@ export class StakingCalculator {
 			pool.endTime.getTime(),
 		);
 
-		// Update pool
-		await prisma.stakingPool.update({
-			where: { id: poolId },
-			data: {
-				rewardPerTokenStored,
-				lastUpdateTime: new Date(lastTimeRewardApplicable),
-			},
-		});
+		if (position.amount && Number(position.amount) > 0) {
+			console.log("Found sufficient amount staked");
 
-		// If there's a user, update their position
-		if (userId) {
-			if (position) {
-				const earned = await this.calculateEarned(position.id);
-				await prisma.stakingPosition.update({
-					where: { id: position.id },
-					data: {
-						rewards: earned,
-						rewardPerTokenPaid: rewardPerTokenStored,
-						lastUpdateTime: new Date(lastTimeRewardApplicable),
-					},
-				});
+			// Update pool
+			await prisma.stakingPool.update({
+				where: { id: poolId },
+				data: {
+					rewardPerTokenStored,
+					lastUpdateTime: new Date(lastTimeRewardApplicable),
+				},
+			});
+			// If there's a user, update their position
+			if (userId) {
+				if (position) {
+					const earned = await this.calculateEarned(position.id);
+					await prisma.stakingPosition.update({
+						where: { id: position.id },
+						data: {
+							rewards: earned,
+							rewardPerTokenPaid: rewardPerTokenStored,
+							lastUpdateTime: new Date(lastTimeRewardApplicable),
+						},
+					});
+				}
 			}
 		}
 

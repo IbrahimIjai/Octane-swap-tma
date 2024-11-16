@@ -67,6 +67,7 @@ function MiningDashboard() {
 		isCurrentlyStaking,
 		hasClaimableRewards,
 		positionsInfo,
+		totalUserStakings,
 
 		userData,
 		isUserLoading,
@@ -117,7 +118,7 @@ function MiningDashboard() {
 				<div className="grid grid-cols-2 gap-4">
 					<Card>
 						<CardContent className="p-4">
-							<p className="text-sm text-muted-foreground">Available pOCT</p>
+							<p className="text-sm text-muted-foreground">pOCT Balance</p>
 							<p className="text-2xl font-semibold">
 								{userBalance.toFixed(2)} pOCT
 							</p>
@@ -125,9 +126,9 @@ function MiningDashboard() {
 					</Card>
 					<Card>
 						<CardContent className="p-4">
-							<p className="text-sm text-muted-foreground">Total Staked</p>
+							<p className="text-sm text-muted-foreground">Total pOCT Staked</p>
 							<p className="text-2xl font-bold">
-								{currentPoolStats?.totalStaked.toFixed(2)} pOCT
+								{totalUserStakings.toFixed(2)} pOCT
 							</p>
 						</CardContent>
 					</Card>
@@ -226,7 +227,7 @@ function MiningDashboard() {
 								</DialogDescription>
 							</DialogHeader>
 							<div className="grid gap-4 py-4">
-								{positionsInfo.map((position) => (
+								{positionsInfo?.map((position) => (
 									<Card key={position.id}>
 										<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 											<CardTitle className="text-sm font-medium">
@@ -277,12 +278,14 @@ function MiningDashboard() {
 				)}
 
 				{isStakeError && (
-					<p className="text-red-500">Error: {stakeError?.message}</p>
+					<p className="text-red-500">
+						Error: {stakeError?.message} Contact Admin
+					</p>
 				)}
 
-				{isStakeSuccess && (
+				{/* {isStakeSuccess && (
 					<p className="text-green-500">Staking successful!</p>
-				)}
+				)} */}
 
 				{!currentPool && (
 					<div className="text-center text-muted-foreground">

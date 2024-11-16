@@ -62,22 +62,30 @@ export const useUser = () => {
 		);
 	};
 	const getUserPositionsInfo = () => {
-		return (
-			userData?.StakingPositions.map((position) => ({
-				isEnded: new Date(position.pool.endTime) < new Date(),
-				isActive:
-					new Date(position.pool.startTime) <= new Date() &&
-					new Date(position.pool.endTime) > new Date(),
+		if (userData?.StakingPositions) {
+			return (
+				userData?.StakingPositions?.map((position) => ({
+					isEnded: new Date(position.pool.endTime) < new Date(),
+					isActive:
+						new Date(position.pool.startTime) <= new Date() &&
+						new Date(position.pool.endTime) > new Date(),
 
-				...position,
-			})) || []
-		);
+					...position,
+				})) || []
+			);
+		} else {
+			[];
+		}
 	};
 
 	//UTILS EXPORT
 
 	const hasClaimableRewards = getClaimablePools().length > 0;
 	const isCurrentlyStaking = getActiveStakingPools().length > 0;
+	const totalUserStakings =
+		getUserPositionsInfo()?.reduce((acc, position) => {
+			return acc + Number(position.amount); // Convert `Decimal` to a number
+		}, 0) || 0;
 
 	//MUTATIONS
 
@@ -180,8 +188,6 @@ export const useUser = () => {
 	};
 
 	return {
-		
-
 		isUserReady,
 		authDate,
 
@@ -202,6 +208,7 @@ export const useUser = () => {
 		isCurrentlyStaking,
 		hasClaimableRewards,
 		positionsInfo: getUserPositionsInfo(),
+		totalUserStakings,
 
 		// stakings
 		stake,

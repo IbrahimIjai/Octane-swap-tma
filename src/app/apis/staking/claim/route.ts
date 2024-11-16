@@ -51,7 +51,7 @@ export async function POST(req: Request) {
 				where: { id: poolId },
 				data: {
 					totalSupply: { decrement: position.amount },
-					rewardAmount: { decrement: position.rewards },
+					// rewardAmount: { decrement: position.rewards },
 				},
 			});
 
