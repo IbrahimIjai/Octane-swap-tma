@@ -29,7 +29,7 @@ export class StakingCalculator {
 			.div(pool.totalSupply);
 
 		console.log({
-			poolrewardsPerTokenstored: Number(
+			poolrewardsPerTokenstoredzzzzzz: Number(
 				pool.rewardPerTokenStored.add(additionalReward),
 			),
 		});
@@ -89,15 +89,21 @@ export class StakingCalculator {
 		);
 
 		// Update pool
+		console.log("Updating staking pool with rewardspertoken stored....");
 		await prisma.stakingPool.update({
 			where: { id: poolId },
 			data: {
-				rewardPerTokenStored: new Decimal(rewardPerTokenStored),
+				rewardPerTokenStored: new Decimal(rewardPerTokenStored).div(
+					this.PRECISION,
+				),
 				lastUpdateTime: new Date(),
 			},
 		});
 
-		console.log("staking pool update completed");
+		console.log(
+			"Finished....Updating staking pool with rewardspertoken stored....",
+		);
+
 		if (position) {
 			console.log("done1");
 			await prisma.stakingPosition.update({
