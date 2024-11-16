@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { StakingCalculator } from "@/utils/staking-protocol-helpers";
+import { error } from "console";
 import { NextResponse } from "next/server";
 
 export async function GET(
@@ -15,10 +16,15 @@ export async function GET(
 			orderBy: { startTime: "desc" },
 		});
 
-		if (latestPool) {
-			await StakingCalculator.updateReward(params.userId, latestPool.id);
-			console.log("....updated current pool");
+		console.log({ latestPool });
+		console.log("starting....");
+		// if (latestPool) {
+		if (!latestPool) {
+			return NextResponse.json({ error: "no latest pool" });
 		}
+		await StakingCalculator.updateReward(params.userId, latestPool?.id);
+		console.log("....updated current pool");
+		// }
 
 		const positions = await prisma.stakingPosition.findMany({
 			where: {

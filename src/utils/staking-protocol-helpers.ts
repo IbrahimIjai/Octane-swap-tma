@@ -1,12 +1,17 @@
 import { prisma } from "@/lib/prisma";
-import { Prisma, StakingPool } from "@prisma/client/edge";
+import { Prisma, StakingPool, StakingPosition } from "@prisma/client/edge";
 
 const { Decimal } = Prisma;
 
+interface StakingPositionWithPool extends StakingPosition {
+	pool: StakingPool;
+}
 export class StakingCalculator {
+	static PRECISION = new Decimal("1e18");
 	static async calculateRewardPerTokenStored(pool: StakingPool) {
+		console.log("in....");
 		if (!pool || pool.totalSupply.equals(0)) {
-			return new Decimal(0);
+			return pool.rewardPerTokenStored;
 		}
 
 		const lastTimeRewardApplicable = Math.min(
@@ -18,29 +23,28 @@ export class StakingCalculator {
 			Math.max(lastTimeRewardApplicable - pool.lastUpdateTime.getTime(), 0),
 		).div(1000); // Convert to seconds
 
-		return pool.rewardPerTokenStored.add(
-			timeDiff.mul(pool.rewardRate).mul(1e18).div(pool.totalSupply),
-		);
+		const additionalReward = timeDiff
+			.mul(pool.rewardRate)
+			.mul(this.PRECISION)
+			.div(pool.totalSupply);
+
+		return pool.rewardPerTokenStored.add(additionalReward);
 	}
 
 	// Replicates earned() from Synthetix
-	static async calculateEarned(positionId: string) {
-		const position = await prisma.stakingPosition.findUnique({
-			where: { id: positionId },
-			include: { pool: true },
-		});
-
-		if (!position) {
+	static async calculateEarned(position: StakingPositionWithPool) {
+		if (!position || position.amount.equals(0)) {
 			return new Decimal(0);
 		}
 
 		const rewardPerToken = await this.calculateRewardPerTokenStored(
 			position.pool,
 		);
+		const rewardDelta = rewardPerToken.sub(position.rewardPerTokenPaid);
 
 		return position.amount
-			.mul(rewardPerToken.sub(position.rewardPerTokenPaid))
-			.div(1e18)
+			.mul(rewardDelta)
+			.div(this.PRECISION)
 			.add(position.rewards);
 	}
 
@@ -49,7 +53,9 @@ export class StakingCalculator {
 		const pool = await prisma.stakingPool.findUnique({
 			where: { id: poolId },
 			include: {
-				positions: true,
+				positions: {
+					where: { userId },
+				},
 			},
 		});
 
@@ -61,49 +67,49 @@ export class StakingCalculator {
 		const position = pool.positions.find(
 			(position) => position.userId === userId,
 		);
+
 		if (!position) {
+			console.log({ userId, positionsfrompool: pool.positions });
 			throw new Error(" Position not found for userId");
 		}
-		console.log("found pool andn position");
+		console.log("found pool and position");
 
 		const rewardPerTokenStored = await this.calculateRewardPerTokenStored(pool);
-		const lastTimeRewardApplicable = Math.min(
-			Date.now(),
-			pool.endTime.getTime(),
+
+		console.log({ rewardPerTokenStored: Number(rewardPerTokenStored) });
+
+		const earned = await this.calculateEarned(
+			position as StakingPositionWithPool,
 		);
+		
+		// Update pool
+		await prisma.stakingPool.update({
+			where: { id: poolId },
+			data: {
+				rewardPerTokenStored: new Decimal(rewardPerTokenStored),
+				lastUpdateTime: new Date(),
+			},
+		});
 
-		if (position.amount && Number(position.amount) > 0) {
-			console.log("Found sufficient amount staked");
-
-			// Update pool
-			await prisma.stakingPool.update({
-				where: { id: poolId },
+		console.log("staking pool update completed");
+		if (position) {
+			console.log("done1");
+			await prisma.stakingPosition.update({
+				where: { id: position.id },
 				data: {
-					rewardPerTokenStored,
-					lastUpdateTime: new Date(lastTimeRewardApplicable),
+					rewards: earned,
+					rewardPerTokenPaid: rewardPerTokenStored,
+					lastUpdateTime: new Date(),
 				},
 			});
-			// If there's a user, update their position
-			if (userId) {
-				if (position) {
-					const earned = await this.calculateEarned(position.id);
-					await prisma.stakingPosition.update({
-						where: { id: position.id },
-						data: {
-							rewards: earned,
-							rewardPerTokenPaid: rewardPerTokenStored,
-							lastUpdateTime: new Date(lastTimeRewardApplicable),
-						},
-					});
-				}
-			}
+			console.log("done22");
 		}
 
 		return {
 			pool,
 			position,
 			rewardPerTokenStored,
-			lastTimeRewardApplicable,
+			// lastTimeRewardApplicable,
 		};
 	}
 }

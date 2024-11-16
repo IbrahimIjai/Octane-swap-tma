@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import { StakingCalculator } from "@/utils/staking-protocol-helpers";
 import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 const { Decimal } = Prisma;
@@ -23,7 +22,7 @@ export async function POST(req: Request) {
 			},
 			orderBy: { startTime: "desc" },
 		});
-		// console.log(latestPool);
+
 		if (!latestPool) {
 			return NextResponse.json(
 				{ error: "No active pool found" },
@@ -31,68 +30,80 @@ export async function POST(req: Request) {
 			);
 		}
 
-		const poolId = latestPool.id;
+		// Check for existing positions in other pools
+		const activePositions = await prisma.stakingPosition.findMany({
+			where: {
+				userId,
+				amount: { gt: 0 },
+				NOT: { poolId: latestPool.id },
+			},
+		});
+
+		if (activePositions.length > 0) {
+			return NextResponse.json(
+				{ error: "Already staking in another pool" },
+				{ status: 400 },
+			);
+		}
+
+		// const poolId = latestPool.id;
 
 		// Start transaction
 		const result = await prisma.$transaction(async (tx) => {
-			await StakingCalculator.updateReward(userId, poolId);
-
 			const user = await tx.user.findUnique({
 				where: { id: userId },
 			});
 
-			console.log({
-				stakingAmount: Number(amount),
-				userBalanceSum: Number(
-					user?.poctBalance.plus(user?.telegramAgeOCTRewards),
-				),
-			});
 			if (!user) {
 				throw new Error("User not found");
 			}
-
 			const totalBalance = user.poctBalance.plus(user.telegramAgeOCTRewards);
-			console.log({ amount, totalBalance: Number(totalBalance) });
-			if (Number(totalBalance) < Number(amount)) {
-				throw new Error("Insufficient balance");
-			}
+			if (totalBalance.lt(amount)) throw new Error("Insufficient balance");
 
-			console.log("updating user...starts");
-
+			// Update user balance
 			await tx.user.update({
 				where: { id: userId },
 				data: {
-					poctBalance: { decrement: amount },
+					poctBalance: { decrement: totalBalance },
 				},
 			});
-
-			console.log("updating position...starts");
 
 			const position = await tx.stakingPosition.upsert({
-				where: { userId_poolId: { userId, poolId } },
+				where: { userId_poolId: { userId, poolId: latestPool.id } },
 				create: {
 					userId,
-					poolId,
-					amount: new Decimal(amount),
+					poolId: latestPool.id,
+					amount: new Decimal(totalBalance),
 					lastUpdateTime: new Date(),
+					rewardPerTokenPaid: latestPool.rewardPerTokenStored,
 				},
 				update: {
-					amount: { increment: amount },
+					amount: { increment: new Decimal(totalBalance) },
 					lastUpdateTime: new Date(),
 				},
 			});
-			console.log({ position });
+			// const position = await tx.stakingPosition.upsert({
+			// 	where: { userId_poolId: { userId, poolId } },
+			// 	create: {
+			// 		userId,
+			// 		poolId,
+			// 		amount: new Decimal(amount),
+			// 		lastUpdateTime: new Date(),
+			// 	},
+			// 	update: {
+			// 		amount: { increment: amount },
+			// 		lastUpdateTime: new Date(),
+			// 	},
+			// });
 
-			console.log("updating stakingpool...starts");
-
+			// Update pool
 			await tx.stakingPool.update({
-				where: { id: poolId },
+				where: { id: latestPool.id },
 				data: {
 					totalSupply: { increment: amount },
+					lastUpdateTime: new Date(),
 				},
 			});
-
-			console.log("done...");
 
 			return position;
 		});

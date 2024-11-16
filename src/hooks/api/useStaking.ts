@@ -76,7 +76,9 @@ export const useStakingProtocol = (userId?: string) => {
 			(sum, position) => sum.plus(position.rewards),
 			new Decimal(0),
 		);
-
+		console.log({
+			poolsRewards: pool.positions.map((post) => Number(post.rewards)),
+		});
 		// Calculate progress percentage
 		const progressPercentage = Number(
 			totalRewardsMinted.div(pool.rewardAmount).times(100),
