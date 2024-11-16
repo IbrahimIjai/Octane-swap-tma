@@ -16,6 +16,8 @@ import PageLoadingUi from "@/components/loaders/page-loading";
 export default function RewardsCalculator() {
 	const { push } = useRouter();
 
+	const initData = useInitData();
+
 	const {
 		isUserReady,
 		authDate,
@@ -90,7 +92,7 @@ export default function RewardsCalculator() {
 							animate={{ opacity: 1, y: 0 }}
 							transition={{ duration: 0.5, delay: 0.5 }}
 							className="text-2xl font-bold mb-4">
-							Welcome to OctaneSwap
+							Welcome to OctaneSwap {initData?.user?.firstName}
 						</motion.h2>
 						<motion.div
 							initial={{ opacity: 0, y: 20 }}

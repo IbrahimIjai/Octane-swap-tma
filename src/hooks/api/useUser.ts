@@ -12,6 +12,8 @@ import { useToast } from "../use-toast";
 
 export const useUser = () => {
 	const initData = useInitData();
+
+	console.log({ initData });
 	const isMounted = useIsMounted();
 	const queryClient = useQueryClient();
 	const { toast } = useToast();
