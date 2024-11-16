@@ -2,7 +2,7 @@
 
 import { calculateTelegramAgeReward } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useInitData, useLaunchParams } from "@telegram-apps/sdk-react";
+import { useInitData, RequestedContact } from "@telegram-apps/sdk-react";
 import { useIsMounted } from "connectkit";
 import axios from "axios";
 import { User } from "@prisma/client";
@@ -12,6 +12,7 @@ import { useToast } from "../use-toast";
 
 export const useUser = () => {
 	const initData = useInitData();
+	const reqData = RequestedContact();
 
 	console.log({ initData });
 	const isMounted = useIsMounted();
