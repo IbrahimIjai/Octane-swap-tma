@@ -1,55 +1,37 @@
 "use client";
 
+// import { type PropsWithChildren, useEffect, useMemo, useState } from "react";
+// import {
+// 	SDKProvider,
+// 	useLaunchParams,
+// 	useMiniApp,
+// 	useThemeParams,
+// 	useViewport,
+// 	bindMiniAppCSSVars,
+// 	bindThemeParamsCSSVars,
+// 	bindViewportCSSVars,
+// } from "@telegram-apps/sdk-react";
+// import { AppRoot } from "@telegram-apps/telegram-ui";
+
+// import { ErrorBoundary } from "@/components/ErrorBoundary";
+// import { ErrorPage } from "@/components/ErrorPage";
+// import { useTelegramMock } from "@/hooks/useTelegramMock";
+// import { useDidMount } from "@/hooks/useDidMount";
+
+import "./styles.css";
+import { ProvidersForFuel } from "./fuel/fuel-provider";
+import Notifications from "../notifications";
+import PageLoadingUi from "../loaders/page-loading";
 import { type PropsWithChildren, useEffect, useMemo, useState } from "react";
-import {
-	SDKProvider,
-	useLaunchParams,
-	useMiniApp,
-	useThemeParams,
-	useViewport,
-	bindMiniAppCSSVars,
-	bindThemeParamsCSSVars,
-	bindViewportCSSVars,
-} from "@telegram-apps/sdk-react";
+import { useLaunchParams, miniApp, useSignal } from "@telegram-apps/sdk-react";
 import { AppRoot } from "@telegram-apps/telegram-ui";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ErrorPage } from "@/components/ErrorPage";
 import { useTelegramMock } from "@/hooks/useTelegramMock";
 import { useDidMount } from "@/hooks/useDidMount";
-
-import "./styles.css";
-import { ProvidersForFuel } from "./fuel/fuel-provider";
-import Notifications from "../notifications";
-import PageLoadingUi from "../loaders/page-loading";
-
-function App(props: PropsWithChildren) {
-	const lp = useLaunchParams();
-	const miniApp = useMiniApp();
-	const themeParams = useThemeParams();
-	const viewport = useViewport();
-
-	useEffect(() => {
-		return bindMiniAppCSSVars(miniApp, themeParams);
-	}, [miniApp, themeParams]);
-
-	useEffect(() => {
-		return bindThemeParamsCSSVars(themeParams);
-	}, [themeParams]);
-
-	useEffect(() => {
-		miniApp.setHeaderColor("#00060097");
-		return viewport && bindViewportCSSVars(viewport);
-	}, [viewport]);
-
-	return (
-		<AppRoot
-			appearance={"dark"}
-			platform={["macos", "ios"].includes(lp.platform) ? "ios" : "base"}>
-			{props.children}
-		</AppRoot>
-	);
-}
+import { init } from "@/init";
+import { useClientOnce } from "@/hooks/useClientOnce";
 
 function RootInner({ children }: PropsWithChildren) {
 	// Mock Telegram environment in development mode if needed.
@@ -58,29 +40,32 @@ function RootInner({ children }: PropsWithChildren) {
 		useTelegramMock();
 	}
 
-	const debug = useLaunchParams().startParam === "debug";
-	useEffect(() => {
-		if (debug) {
-			import("eruda").then((lib) => lib.default.init());
-		}
-	}, [debug]);
+	const lp = useLaunchParams();
+	useClientOnce(() => {
+		init(lp.startParam === "debug");
+	});
+
+	const isDark = useSignal(miniApp.isDark);
+	const manifestUrl = useMemo(() => {
+		return new URL("tonconnect-manifest.json", window.location.href).toString();
+	}, []);
 
 	const [showNotification, setShowNotification] = useState(true);
 
 	return (
-		<SDKProvider acceptCustomStyles debug={debug}>
-			<App>
-				<ProvidersForFuel>
-					<Notifications
-						isVisible={showNotification}
-						setIsVisible={setShowNotification}
-					/>
-					<div className={`${showNotification ? "pt-36" : "pt-10"} px-2 pb-32`}>
-						{children}
-					</div>
-				</ProvidersForFuel>
-			</App>
-		</SDKProvider>
+		<AppRoot
+			appearance={isDark ? "dark" : "light"}
+			platform={["macos", "ios"].includes(lp.platform) ? "ios" : "base"}>
+			<ProvidersForFuel>
+				<Notifications
+					isVisible={showNotification}
+					setIsVisible={setShowNotification}
+				/>
+				<div className={`${showNotification ? "pt-36" : "pt-10"} px-2 pb-32`}>
+					{children}
+				</div>
+			</ProvidersForFuel>
+		</AppRoot>
 	);
 }
 

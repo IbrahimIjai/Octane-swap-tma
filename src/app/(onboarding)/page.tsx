@@ -6,7 +6,7 @@ import { DisplayDataRow } from "@/components/default-comp/DisplayData/DisplayDat
 import OctaneSwapLogo from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useInitData } from "@telegram-apps/sdk-react";
+import { useInitData, RequestedContact } from "@telegram-apps/sdk-react";
 import { Loader2 } from "lucide-react";
 import { calculateAccountAge, calculateTelegramAgeReward } from "@/lib/utils";
 import { useUser } from "@/hooks/api/useUser";
