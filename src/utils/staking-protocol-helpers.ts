@@ -28,6 +28,12 @@ export class StakingCalculator {
 			.mul(this.PRECISION)
 			.div(pool.totalSupply);
 
+		console.log({
+			poolrewardsPerTokenstored: Number(
+				pool.rewardPerTokenStored.add(additionalReward),
+			),
+		});
+
 		return pool.rewardPerTokenStored.add(additionalReward);
 	}
 
@@ -81,7 +87,7 @@ export class StakingCalculator {
 		const earned = await this.calculateEarned(
 			position as StakingPositionWithPool,
 		);
-		
+
 		// Update pool
 		await prisma.stakingPool.update({
 			where: { id: poolId },
