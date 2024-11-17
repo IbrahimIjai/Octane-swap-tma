@@ -1,23 +1,23 @@
-"use client";
+// "use client";
 
-import { useThemeParams } from "@telegram-apps/sdk-react";
-import { List } from "@telegram-apps/telegram-ui";
+// import { useThemeParams } from "@telegram-apps/sdk-react";
+// import { List } from "@telegram-apps/telegram-ui";
 
-import { DisplayData } from "@/components/default-comp/DisplayData/DisplayData";
+// import { DisplayData } from "@/components/default-comp/DisplayData/DisplayData";
 
-export default function ThemeParamsPage() {
-	const themeParams = useThemeParams();
+// export default function ThemeParamsPage() {
+// 	const themeParams = useThemeParams();
 
-	return (
-		<List>
-			<DisplayData
-				rows={Object.entries(themeParams.getState()).map(([title, value]) => ({
-					title: title
-						.replace(/[A-Z]/g, (m) => `_${m.toLowerCase()}`)
-						.replace(/background/, "bg"),
-					value,
-				}))}
-			/>
-		</List>
-	);
-}
+// 	return (
+// 		<List>
+// 			<DisplayData
+// 				rows={Object.entries(themeParams.getState()).map(([title, value]) => ({
+// 					title: title
+// 						.replace(/[A-Z]/g, (m) => `_${m.toLowerCase()}`)
+// 						.replace(/background/, "bg"),
+// 					value,
+// 				}))}
+// 			/>
+// 		</List>
+// 	);
+// }

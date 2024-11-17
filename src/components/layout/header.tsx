@@ -1,6 +1,6 @@
 "use client";
 import { getUserProfilePhoto } from "@/utils/get-profile-image";
-import { useInitData, useInitDataRaw } from "@telegram-apps/sdk-react";
+import { initData } from "@telegram-apps/sdk-react";
 import { Avatar } from "@telegram-apps/telegram-ui";
 import React, { useEffect, useState } from "react";
 import { Skeleton } from "../ui/skeleton";
@@ -12,9 +12,8 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ className = "" }) => {
-	const initData = useInitData();
-	const userId = initData?.user?.id.toString();
-	const username = initData?.user?.username;
+	const userId = initData?.user()?.id.toString();
+	const username = initData?.user()?.username;
 	const displayName = username || userId || "User";
 	// const name = initData?.user?.username;
 	// const id = initData?.user?.id;
@@ -39,7 +38,7 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
 					<Avatar src={profilePhoto} alt={displayName} />
 				)}
 				<div>
-					{initData?.user ? (
+					{initData?.user() ? (
 						<p className="font-medium text-foreground text-sm">{displayName}</p>
 					) : (
 						<Skeleton className="w-24 h-6" />

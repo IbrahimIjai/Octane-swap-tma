@@ -2,7 +2,7 @@
 
 import { calculateTelegramAgeReward } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useInitData, RequestedContact } from "@telegram-apps/sdk-react";
+import { initData } from "@telegram-apps/sdk-react";
 import { useIsMounted } from "connectkit";
 import axios from "axios";
 import { User } from "@prisma/client";
@@ -11,19 +11,17 @@ import { UserWithStaking } from "./staking-game";
 import { useToast } from "../use-toast";
 
 export const useUser = () => {
-	const initData = useInitData();
-	const reqData = RequestedContact();
-
 	console.log({ initData });
 	const isMounted = useIsMounted();
 	const queryClient = useQueryClient();
 	const { toast } = useToast();
 
 	const { push } = useRouter();
-	const telegramId = initData?.user?.id.toString();
+	const telegramId = initData?.user()?.id.toString();
 	const authDate = initData?.authDate;
 
-	const isUserReady = isMounted && initData?.user ? true : false;
+	const isUserReady = isMounted && initData?.user()?.id ? true : false;
+	const isBot = initData?.user()?.isBot;
 	//GET USER
 	const {
 		data: userData,
@@ -93,10 +91,7 @@ export const useUser = () => {
 	//MUTATIONS
 
 	const createUserMutation = useMutation({
-		mutationFn: async (data: {
-			telegramId: string;
-			telegramAgeOCTRewards: string;
-		}) => {
+		mutationFn: async (data: { telegramId: string; referralCode?: string }) => {
 			const response = await axios.post<User>("/apis/user", data);
 			return response.data;
 		},
@@ -150,30 +145,27 @@ export const useUser = () => {
 		if (!isUserReady) {
 			throw new Error("User not ready");
 		}
+		const referralCode = initData?.startParam();
 
-		const tgRewards = await calculateTelegramAgeReward(
-			new Date(initData?.authDate!),
-		);
 		return createUserMutation.mutateAsync({
 			telegramId: telegramId!,
-			telegramAgeOCTRewards: tgRewards.toString(),
+			referralCode,
 		});
 	};
 
 	const stake = async () => {
-		if (!userData) {
-			return toast({
-				variant: "destructive",
-				title: "Staking failed",
-				description: `There was a problem with your request: user not initalized`,
-			});
-		}
-		const amount = (
-			Number(userData.poctBalance) + Number(userData.telegramAgeOCTRewards)
-		).toString();
-
-		console.log(amount);
-		return stakeMutation.mutateAsync({ userId: userData.id, amount });
+		// if (!userData) {
+		// 	return toast({
+		// 		variant: "destructive",
+		// 		title: "Staking failed",
+		// 		description: `There was a problem with your request: user not initalized`,
+		// 	});
+		// }
+		// const amount = (
+		// 	Number(userData.poctBalance) + Number(userData.telegramAgeOCTRewards)
+		// ).toString();
+		// console.log(amount);
+		// return stakeMutation.mutateAsync({ userId: userData.id, amount });
 	};
 
 	const claim = async ({ poolId }: { poolId: string }) => {
@@ -193,6 +185,8 @@ export const useUser = () => {
 	return {
 		isUserReady,
 		authDate,
+		isBot,
+		telegramId,
 
 		//creating user
 		createUser,

@@ -57,10 +57,7 @@ export const useUserStake = ({
 	});
 
 	const stake = async () => {
-		const amount = (
-			Number(userWithStaking.poctBalance) +
-			Number(userWithStaking.telegramAgeOCTRewards)
-		).toString();
+		const amount = "0"
 
 		console.log(amount);
 		return stakeMutation.mutateAsync({ userId: userWithStaking.id, amount });

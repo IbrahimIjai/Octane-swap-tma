@@ -13,9 +13,7 @@ export default function Home() {
 	return (
 		<div className="relative  min-h-screen flex flex-col items-center">
 			<ConnectButton />
-
 			<MiningDashboard />
-
 			<CTAButtons />
 			<DailyTasks />
 			<History />
