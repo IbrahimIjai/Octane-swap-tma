@@ -46,6 +46,7 @@
 		"lottie-react": "^2.4.0",
 		"lucide-react": "^0.447.0",
 		"next": "14.2.4",
+		"next-auth": "^4.24.10",
 		"normalize.css": "^8.0.1",
 		"prisma": "^5.22.0",
 		"react": "^18",
@@ -54,6 +55,7 @@
 		"react-hook-form": "^7.53.2",
 		"tailwind-merge": "^2.5.2",
 		"tailwindcss-animate": "^1.0.7",
+		"telegraf": "^4.16.3",
 		"wagmi": "^2.12.29",
 		"zod": "^3.23.8"
 	},

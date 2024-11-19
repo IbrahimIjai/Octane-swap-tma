@@ -15,8 +15,8 @@ datasource db {
 }
 
 model User {
-  id String @id @default(cuid())
-
+  id              String  @id @default(cuid())
+  isAdmin         Boolean @default(false)
   //socials
   telegramId      String? @unique
   twitterUsername String? @unique
@@ -44,24 +44,27 @@ model User {
 }
 
 model Task {
-  id           String           @id @default(cuid())
-  name         String
-  description  String
-  rewardAmount Decimal
-  type         TaskType
-  frequency    TaskFrequency
-  completions  TaskCompletion[]
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+  id          String           @id @default(cuid())
+  title       String
+  points      Decimal
+  type        TaskType
+  frequency   TaskFrequency
+  category    TaskCategory
+  actionData  Json?
+  completions TaskCompletion[]
+  rewards     Reward[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 }
 
 model TaskCompletion {
-  id        String   @id @default(cuid())
-  user      User     @relation(fields: [userId], references: [id])
+  id        String     @id @default(cuid())
+  user      User       @relation(fields: [userId], references: [id])
   userId    String
-  task      Task     @relation(fields: [taskId], references: [id])
+  task      Task       @relation(fields: [taskId], references: [id])
   taskId    String
-  completed DateTime @default(now())
+  status    TaskStatus
+  completed DateTime   @default(now())
 
   @@unique([userId, taskId])
 }
@@ -78,8 +81,13 @@ model Reward {
   user      User       @relation(fields: [userId], references: [id])
   userId    String
   amount    Decimal
+  task      Task?      @relation(fields: [taskId], references: [id])
+  taskId    String?
   type      RewardType
+  claimed   DateTime?  @default(now())
   createdAt DateTime   @default(now())
+
+  @@unique([userId, taskId])
 }
 
 model StakingPool {
@@ -116,6 +124,24 @@ model StakingPosition {
   @@unique([userId, poolId])
 }
 
+enum TaskCategory {
+  BASED
+  ONCHAIN
+  PARTNER
+}
+
+enum TaskStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+
+enum VerifyMethod {
+  AUTOMATIC
+  ADMIN_VERIFY
+}
+
 enum RewardType {
   WELCOME
   TASK_COMPLETION
@@ -125,8 +151,9 @@ enum RewardType {
 }
 
 enum TaskType {
-  TWITTER
-  TELEGRAM
+  TWITTER_FOLLOW
+  TWITTER_QUOTE_RETWEET
+  TELEGRAM_JOIN
   INVITE
   SHARE_POST
   TRADING

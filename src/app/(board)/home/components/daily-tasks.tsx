@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle2, Circle, Trophy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
+import { useQuery } from "@tanstack/react-query";
+import axios from "axios";
 
 type Task = {
 	id: string;
@@ -41,6 +42,15 @@ const initialDailyTasks: Task[] = [
 const DailyTasks: React.FC = () => {
 	const [dailyTasks, setDailyTasks] = useState<Task[]>(initialDailyTasks);
 	const { toast } = useToast();
+	const { data, isLoading, isError } = useQuery({
+		queryFn: async () => {
+			const res = await axios.get<Task[]>("/apis/admin/tasks");
+			return res.data;
+		},
+		queryKey: ["tasks"],
+	});
+
+	console.log({ data, isLoading, isError });
 
 	const handleJoinTask = (taskId: string) => {
 		setDailyTasks((prevTasks) =>
@@ -114,7 +124,7 @@ const DailyTasks: React.FC = () => {
 								) : (
 									<>
 										<Circle className="w-4 h-4 mr-2" />
-										Do It
+										Start
 									</>
 								)}
 							</Button>

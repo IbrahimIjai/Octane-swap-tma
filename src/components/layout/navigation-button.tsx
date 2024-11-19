@@ -44,7 +44,7 @@ export default function NavigationButton() {
 						onClick={() => push(item.href)}>
 						<Icon
 							className={isActive ? "text-primary" : "text-muted-foreground"}
-							size={30}
+							size={21}
 						/>
 						<span
 							className={`text-xs ${

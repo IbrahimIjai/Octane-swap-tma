@@ -27,11 +27,13 @@ const FUEL_CONFIG = createConfig(() => {
 	return {
 		connectors: defaultConnectors({
 			devMode: true,
+			
 			wcProjectId: process.env.NEXT_PUBLIC_WC_PROJECT_ID,
 			//@ts-ignore
 			ethWagmiConfig: DEFAULT_WAGMI_CONFIG,
 			chainId: NETWORKS[1].chainId,
 			fuelProvider: Provider.create(NETWORKS[0].url),
+			
 		}),
 	};
 });
