@@ -1,175 +1,189 @@
-"use client";
+"use client"
 
-import React, { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import React, { useState, useEffect } from "react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
-	Form,
-	FormControl,
-	FormDescription,
-	FormField,
-	FormItem,
-	FormLabel,
-	FormMessage,
-} from "@/components/ui/form";
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
 import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardFooter,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
-
-import { Pencil, Trash2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import axios from "axios";
-import { Task } from "@prisma/client";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Pencil, Trash2 } from 'lucide-react'
+import { useToast } from "@/hooks/use-toast"
+import axios from "axios"
 
 const taskSchema = z.object({
-	title: z.string().min(1, "Title is required"),
-	points: z.number().min(1, "Points must be at least 1"),
-	type: z.enum([
-		"TWITTER_FOLLOW",
-		"TWITTER_QUOTE_RETWEET",
-		"TELEGRAM_JOIN",
-		"INVITE",
-		"SHARE_POST",
-		"TRADING",
-		"BOOST_CHANNEL",
-		"WEB3_INTERACTION",
-		"DAILY_CHECK_IN",
-	]),
-	category: z.enum(["BASED", "ONCHAIN", "PARTNER"]),
-	frequency: z.enum(["DAILY", "WEEKLY", "ONE_TIME"]),
-	actionData: z.string().min(1, "Action data is required"),
-});
+  title: z.string().min(1, "Title is required"),
+  points: z.number().min(1, "Points must be at least 1"),
+  type: z.enum([
+    "TWITTER_FOLLOW",
+    "TWITTER_QUOTE_RETWEET",
+    "TELEGRAM_JOIN",
+    "INVITE",
+    "SHARE_POST",
+    "TRADING",
+    "BOOST_CHANNEL",
+    "WEB3_INTERACTION",
+    "DAILY_CHECK_IN",
+    "INSTAGRAM_FOLLOW",
+    "YOUTUBE_SUBSCRIBE",
+    "YOUTUBE_WATCH",
+    "TELEGRAM_STORY",
+  ]),
+  category: z.enum(["BASED", "ONCHAIN", "PARTNER"]),
+  frequency: z.enum(["DAILY", "WEEKLY", "ONE_TIME"]),
+  actionData: z.string().refine((data) => {
+    try {
+      JSON.parse(data)
+      return true
+    } catch {
+      return false
+    }
+  }, "Invalid JSON format"),
+})
 
-type TaskFormValues = z.infer<typeof taskSchema>;
+type TaskFormValues = z.infer<typeof taskSchema>
+
+interface Task extends TaskFormValues {
+  id: string
+}
 
 export default function AdminTaskManager() {
-	const [tasks, setTasks] = useState<Task[]>([]);
-	const [editingTask, setEditingTask] = useState<Task | null>(null);
-	const { toast } = useToast();
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const { toast } = useToast()
 
-	const form = useForm<TaskFormValues>({
-		resolver: zodResolver(taskSchema),
-		defaultValues: {
-			title: "",
-			points: 0,
-			type: "TWITTER_FOLLOW",
-			category: "BASED",
-			// action: "CUSTOM",
-			actionData: "",
-		},
-	});
+  const form = useForm<TaskFormValues>({
+    resolver: zodResolver(taskSchema),
+    defaultValues: {
+      title: "",
+      points: 0,
+      type: "TWITTER_FOLLOW",
+      category: "BASED",
+      frequency: "ONE_TIME",
+      actionData: "{}",
+    },
+  })
 
-	useEffect(() => {
-		fetchTasks();
-	}, []);
+  useEffect(() => {
+    fetchTasks()
+  }, [])
 
-	const fetchTasks = async () => {
-		try {
-			const response = await axios.get<Task[]>("/apis/admin/tasks");
-			const data = await response.data;
-			setTasks(data);
-		} catch (error) {
-			console.error("Error fetching tasks:", error);
-			toast({
-				title: "Error",
-				description: "Failed to fetch tasks. Please try again.",
-				variant: "destructive",
-			});
-		}
-	};
+  const fetchTasks = async () => {
+    try {
+      const response = await axios.get<Task[]>("/apis/admin/tasks")
+      setTasks(response.data)
+    } catch (error) {
+      console.error("Error fetching tasks:", error)
+      toast({
+        title: "Error",
+        description: "Failed to fetch tasks. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
 
-	const onSubmit = async (values: TaskFormValues) => {
-		try {
-			const url = editingTask
-				? `/apis/admin/tasks/${editingTask.title}`
-				: "/apis/admin/tasks";
-			const method = editingTask ? "PUT" : "POST";
+  const onSubmit = async (values: TaskFormValues) => {
+    try {
+      const url = editingTask
+        ? `/apis/admin/tasks/${editingTask.id}`
+        : "/apis/admin/tasks"
+      const method = editingTask ? "PUT" : "POST"
 
-			const response = await fetch(url, {
-				method,
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(values),
-			});
+      const response = await axios({
+        method,
+        url,
+        data: values,
+      })
 
-			if (response.ok) {
-				toast({
-					title: editingTask ? "Task Updated" : "Task Created",
-					description: `The task has been successfully ${
-						editingTask ? "updated" : "created"
-					}.`,
-				});
-				fetchTasks();
-				form.reset();
-				setEditingTask(null);
-			} else {
-				throw new Error("Failed to save task");
-			}
-		} catch (error) {
-			console.error("Error saving task:", error);
-			toast({
-				title: "Error",
-				description: "Failed to save task. Please try again.",
-				variant: "destructive",
-			});
-		}
-	};
+      if (response.status === 200 || response.status === 201) {
+        toast({
+          title: editingTask ? "Task Updated" : "Task Created",
+          description: `The task has been successfully ${
+            editingTask ? "updated" : "created"
+          }.`,
+        })
+        fetchTasks()
+        form.reset()
+        setEditingTask(null)
+      } else {
+        throw new Error("Failed to save task")
+      }
+    } catch (error) {
+      console.error("Error saving task:", error)
+      toast({
+        title: "Error",
+        description: "Failed to save task. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
 
-	const handleEdit = (task: Task) => {
-		setEditingTask(task);
-		// form.reset(task);
-	};
+  const handleEdit = (task: Task) => {
+    setEditingTask(task)
+    form.reset({
+      ...task,
+      actionData: JSON.stringify(task.actionData, null, 2),
+    })
+  }
 
-	const handleDelete = async (taskId: string) => {
-		if (confirm("Are you sure you want to delete this task?")) {
-			try {
-				const response = await fetch(`/apis/admin/tasks/${taskId}`, {
-					method: "DELETE",
-				});
+  const handleDelete = async (taskId: string) => {
+    if (confirm("Are you sure you want to delete this task?")) {
+      try {
+        const response = await axios.delete(`/apis/admin/tasks/${taskId}`)
 
-				if (response.ok) {
-					toast({
-						title: "Task Deleted",
-						description: "The task has been successfully deleted.",
-					});
-					fetchTasks();
-				} else {
-					throw new Error("Failed to delete task");
-				}
-			} catch (error) {
-				console.error("Error deleting task:", error);
-				toast({
-					title: "Error",
-					description: "Failed to delete task. Please try again.",
-					variant: "destructive",
-				});
-			}
-		}
-	};
+        if (response.status === 200) {
+          toast({
+            title: "Task Deleted",
+            description: "The task has been successfully deleted.",
+          })
+          fetchTasks()
+        } else {
+          throw new Error("Failed to delete task")
+        }
+      } catch (error) {
+        console.error("Error deleting task:", error)
+        toast({
+          title: "Error",
+          description: "Failed to delete task. Please try again.",
+          variant: "destructive",
+        })
+      }
+    }
+  }
 
-	return (
+  return (
 		<div className="container mx-auto p-4">
 			<h1 className="text-2xl font-bold mb-4">Admin Task Manager</h1>
 			<Card className="mb-8">
@@ -229,15 +243,16 @@ export default function AdminTaskManager() {
 													<SelectValue placeholder="Select task type" />
 												</SelectTrigger>
 											</FormControl>
-
 											<SelectContent>
 												<SelectItem value="TWITTER_FOLLOW">
-													Twitter flow
+													Twitter Follow
 												</SelectItem>
 												<SelectItem value="TWITTER_QUOTE_RETWEET">
-													Twitter quote
+													Twitter Quote Retweet
 												</SelectItem>
-												<SelectItem value="TELEGRAM_JOIN">Telegram join</SelectItem>
+												<SelectItem value="TELEGRAM_JOIN">
+													Telegram Join
+												</SelectItem>
 												<SelectItem value="INVITE">Invite</SelectItem>
 												<SelectItem value="SHARE_POST">Share Post</SelectItem>
 												<SelectItem value="TRADING">Trading</SelectItem>
@@ -249,6 +264,18 @@ export default function AdminTaskManager() {
 												</SelectItem>
 												<SelectItem value="DAILY_CHECK_IN">
 													Daily Check-in
+												</SelectItem>
+												<SelectItem value="INSTAGRAM_FOLLOW">
+													Instagram Follow
+												</SelectItem>
+												<SelectItem value="YOUTUBE_SUBSCRIBE">
+													YouTube Subscribe
+												</SelectItem>
+												<SelectItem value="YOUTUBE_WATCH">
+													YouTube Watch
+												</SelectItem>
+												<SelectItem value="TELEGRAM_STORY">
+													Telegram Story
 												</SelectItem>
 											</SelectContent>
 										</Select>
@@ -309,16 +336,17 @@ export default function AdminTaskManager() {
 								name="actionData"
 								render={({ field }) => (
 									<FormItem>
-										<FormLabel>Action Data</FormLabel>
+										<FormLabel>Action Data (JSON)</FormLabel>
 										<FormControl>
-											<Input
-												placeholder="Enter action data (e.g., Telegram group link)"
+											<Textarea
+												placeholder="Enter action data in JSON format"
 												{...field}
+												rows={5}
 											/>
 										</FormControl>
 										<FormDescription>
-											Specific data required for the task (e.g., Telegram group
-											link, Twitter post URL)
+											Enter the action data in valid JSON format e.g.,
+											&quot;username&quot;: &quot;example&quot;
 										</FormDescription>
 										<FormMessage />
 									</FormItem>
@@ -360,17 +388,23 @@ export default function AdminTaskManager() {
 								<TableHead>Category</TableHead>
 								<TableHead>Points</TableHead>
 								<TableHead>Frequency</TableHead>
+								<TableHead>Action Data</TableHead>
 								<TableHead>Manage</TableHead>
 							</TableRow>
 						</TableHeader>
 						<TableBody>
 							{tasks.map((task) => (
-								<TableRow key={task.title}>
+								<TableRow key={task.id}>
 									<TableCell>{task.title}</TableCell>
 									<TableCell>{task.type}</TableCell>
 									<TableCell>{task.category}</TableCell>
 									<TableCell>{Number(task.points).toFixed(2)}</TableCell>
 									<TableCell>{task.frequency}</TableCell>
+									<TableCell>
+										<pre className="text-xs overflow-hidden text-ellipsis max-w-xs">
+											{JSON.stringify(task.actionData, null, 2)}
+										</pre>
+									</TableCell>
 									<TableCell>
 										<Button
 											variant="ghost"

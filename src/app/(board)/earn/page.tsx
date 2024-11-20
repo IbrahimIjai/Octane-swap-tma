@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, ChevronLeft, Circle } from "lucide-react";
+import { CheckCircle2, ChevronLeft, Circle, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { Task, TaskCategory, TaskCompletion } from "@prisma/client";
 import { useUser } from "@/hooks/api/useUser";
@@ -18,8 +18,8 @@ export default function Earn() {
 	const router = useRouter();
 	const [tasks, setTasks] = useState<Task[]>([]);
 	const { toast } = useToast();
-	const [activeTab, setActiveTab] = useState<TaskCategory>("based");
-
+	const [activeTab, setActiveTab] = useState("based");
+	const queryClient = useQueryClient();
 	const {
 		isUserReady,
 		authDate,
@@ -32,7 +32,12 @@ export default function Earn() {
 		isUserError,
 	} = useUser();
 
-	const { startTask } = useTasks();
+	const {
+		startTask,
+		verifyTask,
+		requiresAdminVerification,
+		getSocialMediaUrl,
+	} = useTasks();
 
 	const {
 		data: alltasks,
@@ -49,31 +54,6 @@ export default function Earn() {
 
 	console.log({ alltasks });
 
-	// const handleTaskCompletion = (taskId: string) => {
-	// 	setTasks((prevTasks) =>
-	// 		prevTasks.map((task) =>
-	// 			task.id === taskId ? { ...task, completed: !task.completed } : task,
-	// 		),
-	// 	);
-
-	// 	const task = tasks.find((t) => t.id === taskId);
-	// 	if (task) {
-	// 		toast({
-	// 			title: task.completed ? "Task Uncompleted" : "Task Completed!",
-	// 			description: task.completed
-	// 				? `You've uncompleted "${task.title}". You can always do it later!`
-	// 				: `Great job! You've earned ${task.points} Vibe Points for completing "${task.title}".`,
-	// 			variant: task.completed ? "destructive" : "default",
-	// 		});
-	// 	}
-	// };
-
-	// const totalPoints = tasks.reduce((sum, task) => sum + task.points, 0);
-	// const earnedPoints = tasks
-	// 	.filter((task) => task.completed)
-	// 	.reduce((sum, task) => sum + task.points, 0);
-	// const progressPercentage = (earnedPoints / totalPoints) * 100;
-
 	const totalPoints =
 		alltasks?.reduce((sum, task) => sum + Number(task.points), 0) || 0;
 	const earnedPoints =
@@ -87,6 +67,7 @@ export default function Earn() {
 
 	const isTaskCompletedAndClaimed = (taskId: string) => {
 		return (
+			userData?.TaskCompletions?.find((task) => task.taskId === taskId) &&
 			userData?.TaskCompletions?.find((task) => task.taskId === taskId)
 				?.completed !== null
 		);
@@ -96,6 +77,64 @@ export default function Earn() {
 			?.claimed;
 	};
 
+	const getTaskStatus = (taskId: string): TaskCompletion["status"] => {
+		const completion = userData?.TaskCompletions?.find(
+			(c) => c.taskId === taskId,
+		);
+		return completion?.status || "NOT_STARTED";
+	};
+
+	const getButtonText = (task: Task) => {
+		const status = getTaskStatus(task.id);
+		switch (status) {
+			case "NOT_STARTED":
+			case "FAILED":
+				return "Start";
+			case "IN_PROGRESS":
+				return requiresAdminVerification(task.type)
+					? "Pending Verification"
+					: "Verify";
+			case "COMPLETED":
+				return userData?.Rewards.find((r) => r.taskId === task.id)?.claimed
+					? "Claimed"
+					: "Claim";
+			default:
+				return "Start";
+		}
+	};
+
+	const handleTaskAction = async (task: Task) => {
+		if (!userData) {
+			toast({
+				title: "Error",
+				description: "Please log in to perform tasks.",
+				variant: "destructive",
+			});
+			return;
+		}
+
+		const status = getTaskStatus(task.id);
+
+		if (status === "NOT_STARTED" || status === "FAILED") {
+			await startTask(task, userData.id);
+			if (task.type.startsWith("TWITTER_") || task.type === "TELEGRAM_JOIN") {
+				const url = getSocialMediaUrl(task);
+				if (url) window.open(url, "_blank");
+			}
+		} else if (
+			status === "IN_PROGRESS" &&
+			!requiresAdminVerification(task.type)
+		) {
+			await verifyTask({ userId: userData.id, taskId: task.id });
+		} else if (status === "COMPLETED") {
+			// Implement claim logic here
+			toast({
+				title: "Success",
+				description: "Rewards claimed successfully!",
+			});
+			queryClient.invalidateQueries({ queryKey: ["user"] });
+		}
+	};
 	const TaskList = ({ tasks, type }: { tasks: Task[]; type: TaskCategory }) => (
 		<div className="space-y-4">
 			{tasks
@@ -113,27 +152,17 @@ export default function Earn() {
 									+{Number(task.points)} pOCT
 								</Badge>
 							</div>
-							{isTaskCompletedAndClaimed(task.id) ? (
-								<Button disabled>Claimed</Button>
-							) : (
-								<>
-									{userData?.TaskCompletions.find((task) => task.id === task.id)
-										?.status === "NOT_STARTED" ? (
-										<Button>
-											<Circle className="w-4 h-4 mr-2" />
-											Start
-										</Button>
-									) : userData?.TaskCompletions.find(
-											(task) => task.id === task.id,
-									  )?.status === "IN_PROGRESS" ? (
-										<Button>Verify Task</Button>
-									) : (
-										userData?.TaskCompletions.find(
-											(task) => task.id === task.id,
-										)?.status === "COMPLETED" && <Button>Claim</Button>
-									)}
-								</>
-							)}
+							<Button
+								onClick={() => handleTaskAction(task)}
+								disabled={
+									getTaskStatus(task.id) === "IN_PROGRESS" &&
+									requiresAdminVerification(task.type)
+								}>
+								{getTaskStatus(task.id) === "NOT_STARTED" && (
+									<Circle className="w-4 h-4 mr-2" />
+								)}
+								{getButtonText(task)}
+							</Button>
 						</CardContent>
 					</Card>
 				))}

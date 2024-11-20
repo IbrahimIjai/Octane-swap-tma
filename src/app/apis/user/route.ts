@@ -70,23 +70,42 @@ export async function POST(req: NextRequest) {
 
 		const telegramAgeOCTRewards = calculateTelegramAgeReward(telegramId);
 
-		console.log({ telegramAgeOCTRewards, telegramId });
-
-		let referredByUser = null;
-		if (referralCode) {
-			referredByUser = await prisma.user.findUnique({
-				where: { referralCode },
-			});
-		}
-
 		const user = await prisma.$transaction(async (tx) => {
+			let referrer = null;
+
+			if (referralCode) {
+				referrer = await tx.user.findUnique({ where: { referralCode } });
+			}
+
 			const newUser = await tx.user.create({
 				data: {
 					telegramId,
-					referralCode: `REF${Math.random().toString(36).substr(2, 9)}`,
-					referredBy: referredByUser ? referredByUser.id : null,
+					referralCode: telegramId,
 				},
 			});
+
+			if (referrer) {
+				await tx.referral.create({
+					data: {
+						referrerId: referrer.id,
+						referredId: newUser.id,
+					},
+				});
+
+				const referralReward = 100; // Set your referral reward amount
+				await tx.reward.create({
+					data: {
+						userId: referrer.id,
+						amount: referralReward,
+						type: "REFERRAL",
+					},
+				});
+				await tx.user.update({
+					where: { id: referrer.id },
+					data: { totalRewards: { increment: referralReward } },
+				});
+			}
+
 			await tx.reward.create({
 				data: {
 					userId: newUser.id,
@@ -94,24 +113,11 @@ export async function POST(req: NextRequest) {
 					type: "WELCOME",
 				},
 			});
+
 			await tx.user.update({
 				where: { id: newUser.id },
 				data: { totalRewards: { increment: telegramAgeOCTRewards } },
 			});
-			if (referredByUser) {
-				const referralReward = 100; // Set your referral reward amount
-				await tx.reward.create({
-					data: {
-						userId: referredByUser.id,
-						amount: referralReward,
-						type: "REFERRAL",
-					},
-				});
-				await tx.user.update({
-					where: { id: referredByUser.id },
-					data: { totalRewards: { increment: referralReward } },
-				});
-			}
 
 			return newUser;
 		});

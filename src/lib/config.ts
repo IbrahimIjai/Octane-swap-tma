@@ -46,3 +46,4 @@ export const TOTAL_POOL_SIZE= 1_000_000
 export const SECONDS_PER_YEAR = 31536000;
 
 export const OCTANESWAP_TG_COMMUNITY = "t.me/octaneswap";
+export const OCTANESWAP_BOT_LINK = "https://t.me/octaneswapbot";

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
@@ -14,14 +14,22 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, CheckCircle, XCircle } from "lucide-react";
+import { ExternalLink, CheckCircle, XCircle, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 
 interface TwitterTask {
 	id: string;
 	title: string;
 	points: number;
 	type: "TWITTER_FOLLOW" | "TWITTER_QUOTE_RETWEET";
+	actionData: { username?: string; tweetId?: string };
 	completions: {
 		id: string;
 		status: "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED" | "FAILED";
@@ -35,15 +43,18 @@ interface TwitterTask {
 export default function AdminTwitterTasks() {
 	const { toast } = useToast();
 	const queryClient = useQueryClient();
+	const [filter, setFilter] = useState<
+		"ALL" | "TWITTER_FOLLOW" | "TWITTER_QUOTE_RETWEET"
+	>("ALL");
 
 	const {
 		data: tasks,
 		isLoading,
 		isError,
 	} = useQuery<TwitterTask[]>({
-		queryKey: ["adminTwitterTasks"],
+		queryKey: ["adminTwitterTasks", filter],
 		queryFn: async () => {
-			const res = await axios.get("/api/admin/twitter-tasks");
+			const res = await axios.get(`/api/admin/tasks/twitter?filter=${filter}`);
 			return res.data;
 		},
 	});
@@ -58,7 +69,7 @@ export default function AdminTwitterTasks() {
 			userId: string;
 			status: "COMPLETED" | "FAILED";
 		}) =>
-			axios.post(`/api/admin/twitter-tasks/${taskId}/verify`, {
+			axios.post(`/api/admin/tasks/twitter/${taskId}`, {
 				userId,
 				status,
 			}),
@@ -81,12 +92,32 @@ export default function AdminTwitterTasks() {
 	if (isLoading) return <div>Loading tasks...</div>;
 	if (isError) return <div>Error loading tasks</div>;
 
+	const filteredTasks =
+		filter === "ALL" ? tasks : tasks?.filter((task) => task.type === filter);
+
 	return (
 		<Card className="w-full max-w-4xl mx-auto mt-8">
 			<CardHeader>
-				<CardTitle className="text-2xl font-semibold">
-					Admin Twitter Tasks
-				</CardTitle>
+				<div className="flex justify-between items-center">
+					<CardTitle className="text-2xl font-semibold">
+						Admin Twitter Tasks
+					</CardTitle>
+					<Select
+						onValueChange={(
+							value: "ALL" | "TWITTER_FOLLOW" | "TWITTER_QUOTE_RETWEET",
+						) => setFilter(value)}>
+						<SelectTrigger className="w-[180px]">
+							<SelectValue placeholder="Filter tasks" />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="ALL">All Tasks</SelectItem>
+							<SelectItem value="TWITTER_FOLLOW">Follow Tasks</SelectItem>
+							<SelectItem value="TWITTER_QUOTE_RETWEET">
+								Quote Retweet Tasks
+							</SelectItem>
+						</SelectContent>
+					</Select>
+				</div>
 			</CardHeader>
 			<CardContent>
 				<Table>
@@ -101,7 +132,7 @@ export default function AdminTwitterTasks() {
 						</TableRow>
 					</TableHeader>
 					<TableBody>
-						{tasks?.flatMap((task) =>
+						{filteredTasks?.flatMap((task) =>
 							task.completions.map((completion) => (
 								<TableRow key={`${task.id}-${completion.id}`}>
 									<TableCell>{task.title}</TableCell>
@@ -123,12 +154,13 @@ export default function AdminTwitterTasks() {
 											<Button
 												size="sm"
 												variant="outline"
-												onClick={() =>
-													window.open(
-														`https://twitter.com/${completion.user.twitterUsername}`,
-														"_blank",
-													)
-												}>
+												onClick={() => {
+													const url =
+														task.type === "TWITTER_FOLLOW"
+															? `https://twitter.com/${task.actionData.username}`
+															: `https://twitter.com/${completion.user.twitterUsername}/status/${task.actionData.tweetId}`;
+													window.open(url, "_blank");
+												}}>
 												<ExternalLink className="w-4 h-4 mr-2" />
 												Check
 											</Button>

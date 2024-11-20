@@ -6,7 +6,6 @@ import OctaneSwapLogo from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { initData, RequestedContact } from "@telegram-apps/sdk-react";
-import { Loader2 } from "lucide-react";
 import { calculateAccountAge, calculateTelegramAgeReward } from "@/lib/utils";
 import { useUser } from "@/hooks/api/useUser";
 import { redirect, useRouter } from "next/navigation";
@@ -56,10 +55,12 @@ export default function RewardsCalculator() {
 	// 	redirect("/home");
 	// }
 
-	if (isLoading || !isUserReady || !isFetchingUserSuccess) {
+	if (isLoading || !isUserReady) {
 		return (
 			<>
-				<PageLoadingUi />
+				<div>
+					<PageLoadingUi />
+				</div>
 			</>
 		);
 	}

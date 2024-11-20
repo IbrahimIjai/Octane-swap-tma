@@ -16,11 +16,9 @@ import { shareStory } from "@telegram-apps/sdk-react";
 const DailyTasks = ({
 	userData,
 	isUserLoading,
-	isStaking,
 }: {
 	userData: LocalUser | undefined;
 	isUserLoading: boolean;
-	isStaking: boolean;
 }) => {
 	const [dailyTasks, setDailyTasks] = useState<Task[]>([]);
 	const { toast } = useToast();

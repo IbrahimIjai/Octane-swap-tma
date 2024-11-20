@@ -1,13 +1,22 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { TaskType } from "@prisma/client";
 
 export async function GET(req: Request) {
+	const { searchParams } = new URL(req.url);
+	const filter = searchParams.get("filter") as TaskType | "ALL" | null;
+
+	let whereClause: { type?: { in: TaskType[] } | TaskType } = {};
+
+	if (filter && filter !== "ALL") {
+		if (filter === "TWITTER_FOLLOW" || filter === "TWITTER_QUOTE_RETWEET") {
+			whereClause.type = filter;
+		}
+	} else {
+		whereClause.type = { in: ["TWITTER_FOLLOW", "TWITTER_QUOTE_RETWEET"] };
+	}
 	const twitterTasks = await prisma.task.findMany({
-		where: {
-			type: {
-				in: ["TWITTER_FOLLOW", "TWITTER_QUOTE_RETWEET"],
-			},
-		},
+		where: whereClause,
 		include: {
 			completions: {
 				include: {
@@ -72,6 +81,14 @@ export async function POST(
 					taskId: taskId,
 					amount: task.points,
 					type: "TASK_COMPLETION",
+				},
+			});
+			await prisma.user.update({
+				where: { id: userId },
+				data: {
+					totalRewards: {
+						increment: task.points,
+					},
 				},
 			});
 		}

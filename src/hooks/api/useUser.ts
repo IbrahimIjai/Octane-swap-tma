@@ -139,6 +139,21 @@ export const useUser = () => {
 			});
 		},
 	});
+	const getReferralLinkMutation = useMutation({
+		mutationFn: async () => {
+			const response = await axios.get(
+				`/apis/user/refferallink?telegramId=${telegramId}`,
+			);
+			return response.data;
+		},
+		onSuccess: (data) => {
+			toast({
+				title: "Referral Link Generated",
+				description: "Your referral link has been copied to clipboard.",
+			});
+			navigator.clipboard.writeText(data.referralLink);
+		},
+	});
 
 	//ACTIONS FROM MUTATIONS
 	const createUser = async () => {
@@ -153,9 +168,7 @@ export const useUser = () => {
 		});
 	};
 
-	const stake = async () => {
-	
-	};
+	const stake = async () => {};
 
 	const claim = async ({ poolId }: { poolId: string }) => {
 		if (!userData || !poolId) {
@@ -171,6 +184,12 @@ export const useUser = () => {
 		});
 	};
 
+	const getReferralLink = async () => {
+		if (!isUserReady) {
+			throw new Error("User not ready");
+		}
+		return getReferralLinkMutation.mutateAsync();
+	};
 	return {
 		isUserReady,
 		authDate,
@@ -208,5 +227,8 @@ export const useUser = () => {
 		isClaiming: claimMutation.isPending,
 		isClaimingSuccess: claimMutation.isSuccess,
 		isClaimError: claimMutation.isError,
+
+		getReferralLink,
+		isGettingReferralLink: getReferralLinkMutation.isPending,
 	};
 };

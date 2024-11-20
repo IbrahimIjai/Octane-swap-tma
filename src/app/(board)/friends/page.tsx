@@ -6,6 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useUser } from "@/hooks/api/useUser";
+import { useQuery } from "@tanstack/react-query";
+import axios from "axios";
+import { useToast } from "@/hooks/use-toast";
 
 // types
 interface Tier {
@@ -16,6 +20,12 @@ interface Tier {
 	color?: string;
 }
 
+interface ReferredFriend {
+	id: string;
+	telegramId: string;
+	createdAt: string;
+	rewardAmount: number;
+}
 interface ReferralStats {
 	activeReferrals: number;
 	totalInvites: number;
@@ -63,36 +73,48 @@ const TIERS: Tier[] = [
 ];
 
 const FriendsAndReferral = () => {
-	const [referralLink] = useState("https://t.me/YourDexBot?start=ref123");
-	const [stats, setStats] = useState<ReferralStats>({
-		activeReferrals: 12,
-		totalInvites: 15,
-		rewardsEarned: 500,
-		currentPoints: 2800,
-	});
-	const [friends] = useState([
-		{
-			id: 1,
-			username: "alice_trader",
-			points: 429,
-			date: "2024-11-11T23:35:00Z",
-			status: "Received",
-		},
-		{
-			id: 2,
-			username: "bob_defi",
-			points: 970,
-			date: "2024-11-11T22:25:00Z",
-			status: "Pending",
-		},
-	]);
+	const { toast } = useToast();
+	const { userData, getReferralLink, isGettingReferralLink } = useUser();
 
-	const handleCopyLink = async () => {
+	const { data: referralStats, isLoading: isLoadingStats } =
+		useQuery<ReferralStats>({
+			queryKey: ["referralStats", userData?.id],
+			queryFn: async () => {
+				const response = await axios.get(
+					`/apis/user/refferalstats?userId=${userData?.id}`,
+				);
+				return response.data;
+			},
+			enabled: !!userData?.id,
+		});
+
+	const { data: friends, isLoading: isLoadingFriends } = useQuery<
+		ReferredFriend[]
+	>({
+		queryKey: ["referredFriends", userData?.id],
+		queryFn: async () => {
+			const response = await axios.get(
+				`/apis/user/refferedfriends?userId=${userData?.id}`,
+			);
+			return response.data;
+		},
+		enabled: !!userData?.id,
+	});
+
+	const handleGetReferralLink = async () => {
 		try {
+			const { referralLink } = await getReferralLink();
 			await navigator.clipboard.writeText(referralLink);
-			// You could add a toast notification here
-		} catch (err) {
-			console.error("Failed to copy link:", err);
+			toast({
+				title: "Referral Link Copied",
+				description: "Your referral link has been copied to the clipboard.",
+			});
+		} catch (error) {
+			toast({
+				title: "Error",
+				description: "Failed to generate referral link. Please try again.",
+				variant: "destructive",
+			});
 		}
 	};
 
@@ -118,12 +140,16 @@ const FriendsAndReferral = () => {
 		return Math.min(((points - baseline) / (target - baseline)) * 100, 100);
 	};
 
-	const currentTier = getCurrentTier(stats.currentPoints);
+	const currentTier = getCurrentTier(referralStats?.currentPoints || 0);
 	const nextTier = getNextTier(currentTier);
+
+	if (isLoadingStats || isLoadingFriends) {
+		return <div>Loading...</div>;
+	}
 	return (
 		<div className="space-y-6 max-w-md mx-auto p-4">
 			{/* Tier Progress */}
-			<Card className="  text-white">
+			<Card className="text-white">
 				<CardHeader className="pb-2">
 					<div className="flex justify-between items-center">
 						<CardTitle className="text-lg font-medium">Your Progress</CardTitle>
@@ -135,60 +161,61 @@ const FriendsAndReferral = () => {
 					</div>
 				</CardHeader>
 				<CardContent className="space-y-6">
-					{/* Points Display */}
 					<div className="text-center pt-2">
 						<span className="text-3xl font-bold">
-							{stats.currentPoints.toLocaleString()}
+							{referralStats?.currentPoints.toLocaleString()}
 						</span>
 						<span className="text-sm text-gray-400 ml-2">points</span>
 					</div>
 
-					{/* Progress Bar */}
 					<div className="relative">
 						<div className="h-2 bg-gray-700 rounded-full">
 							<div
 								className={`h-full rounded-full bg-gradient-to-r ${currentTier.color} transition-all duration-500`}
-								style={{ width: `${getProgress(stats.currentPoints)}%` }}
+								style={{
+									width: `${getProgress(referralStats?.currentPoints || 0)}%`,
+								}}
 							/>
 						</div>
 
-						{/* Next Tier Info */}
 						{nextTier && (
 							<div className="mt-2 flex justify-between text-xs text-gray-400">
 								<span>Current: {currentTier.name}</span>
 								<span>
 									Next: {nextTier.name} (
-									{nextTier.requiredPoints - stats.currentPoints} points needed)
+									{nextTier.requiredPoints -
+										(referralStats?.currentPoints || 0)}{" "}
+									points needed)
 								</span>
 							</div>
 						)}
 					</div>
 
-					{/* Stats Grid */}
 					<div className="grid grid-cols-3 gap-3 pt-2">
 						<div className="bg-gray-800/50 rounded-lg p-3 text-center">
 							<Users className="w-5 h-5 mx-auto mb-1 text-purple-400" />
 							<div className="text-xs text-gray-400">Active</div>
 							<div className="text-sm font-semibold">
-								{stats.activeReferrals}
+								{referralStats?.activeReferrals}
 							</div>
 						</div>
 						<div className="bg-gray-800/50 rounded-lg p-3 text-center">
 							<Share2 className="w-5 h-5 mx-auto mb-1 text-blue-400" />
 							<div className="text-xs text-gray-400">Total</div>
-							<div className="text-sm font-semibold">{stats.totalInvites}</div>
+							<div className="text-sm font-semibold">
+								{referralStats?.totalInvites}
+							</div>
 						</div>
 						<div className="bg-gray-800/50 rounded-lg p-3 text-center">
 							<Trophy className="w-5 h-5 mx-auto mb-1 text-yellow-400" />
 							<div className="text-xs text-gray-400">Earned</div>
 							<div className="text-sm font-semibold">
-								${stats.rewardsEarned}
+								${referralStats?.rewardsEarned.toFixed(2)}
 							</div>
 						</div>
 					</div>
 				</CardContent>
 			</Card>
-
 			{/* Rewards Info */}
 			<Card className="bg-card">
 				<CardHeader>
@@ -272,34 +299,30 @@ const FriendsAndReferral = () => {
 					</div>
 				</CardContent>
 			</Card>
-
 			{/* Invite Link */}
 			<Card>
 				<CardContent className="p-4">
-					<div className="flex items-center justify-between bg-gray-50 p-3 rounded">
-						<div className="text-sm text-gray-600 overflow-hidden overflow-ellipsis">
-							{referralLink}
-						</div>
-						<Button
-							variant="outline"
-							size="sm"
-							onClick={handleCopyLink}
-							className="ml-2">
-							<Copy size={16} />
-						</Button>
-					</div>
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={handleGetReferralLink}
+						disabled={isGettingReferralLink}
+						className="w-full">
+						{isGettingReferralLink ? "Generating..." : "Get Referral Link"}
+					</Button>
 				</CardContent>
 			</Card>
-
 			{/* Friends List */}
 			<Card>
 				<CardHeader className="flex flex-row items-center justify-between">
 					<CardTitle>Invited Friends</CardTitle>
-					<div className="text-sm text-gray-500">{friends.length} users</div>
+					<div className="text-sm text-gray-500">
+						{friends?.length || 0} users
+					</div>
 				</CardHeader>
 				<CardContent>
 					<div className="space-y-4">
-						{friends.map((friend) => (
+						{friends?.map((friend) => (
 							<div
 								key={friend.id}
 								className="flex items-center justify-between p-2 border-b">
@@ -308,31 +331,26 @@ const FriendsAndReferral = () => {
 										<Users size={16} />
 									</div>
 									<div>
-										<div className="font-medium">{friend.username}</div>
+										<div className="font-medium">{friend.telegramId}</div>
 										<div className="text-sm text-gray-500">
-											{new Date(friend.date).toLocaleString()}
+											{new Date(friend.createdAt).toLocaleString()}
 										</div>
 									</div>
 								</div>
 								<div className="flex items-center space-x-2">
-									<span
-										className={`text-sm ${
-											friend.status === "Received"
-												? "text-green-500"
-												: "text-yellow-500"
-										}`}>
-										+{friend.points} PAWS
+									<span className="text-sm text-green-500">
+										+{friend.rewardAmount} pOCT
 									</span>
-									<span className="text-xs text-gray-500">{friend.status}</span>
 								</div>
 							</div>
 						))}
 					</div>
 				</CardContent>
 			</Card>
-
 			{/* Main Invite Button */}
-			<Button className="w-full bg-blue-500 hover:bg-blue-600 text-white">
+			<Button
+				className="w-full bg-blue-500 hover:bg-blue-600 text-white"
+				onClick={handleGetReferralLink}>
 				Invite Friends
 				<ArrowRight className="ml-2" size={16} />
 			</Button>
