@@ -8,113 +8,132 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-
-type TaskType = "based" | "onchain" | "partner";
-
-interface Task {
-	id: string;
-	title: string;
-	points: number;
-	completed: boolean;
-	taskType: TaskType;
-}
-
-const initialTasks: Task[] = [
-	{
-		id: "1",
-		title: "Share a post on Twitter",
-		points: 50,
-		completed: false,
-		taskType: "based",
-	},
-	{
-		id: "2",
-		title: "Comment on a community thread",
-		points: 30,
-		completed: false,
-		taskType: "based",
-	},
-	{
-		id: "3",
-		title: "Invite a friend to Octane Swap",
-		points: 100,
-		completed: false,
-		taskType: "onchain",
-	},
-	{
-		id: "4",
-		title: "Complete a swap on Octane",
-		points: 75,
-		completed: false,
-		taskType: "partner",
-	},
-];
+import { useQuery } from "@tanstack/react-query";
+import axios from "axios";
+import { Task, TaskCategory, TaskCompletion } from "@prisma/client";
+import { useUser } from "@/hooks/api/useUser";
+import { useTasks } from "@/hooks/api/useTasks";
 
 export default function Earn() {
 	const router = useRouter();
-	const [tasks, setTasks] = useState<Task[]>(initialTasks);
+	const [tasks, setTasks] = useState<Task[]>([]);
 	const { toast } = useToast();
-	const [activeTab, setActiveTab] = useState<TaskType>("based");
+	const [activeTab, setActiveTab] = useState<TaskCategory>("based");
 
-	const handleTaskCompletion = (taskId: string) => {
-		setTasks((prevTasks) =>
-			prevTasks.map((task) =>
-				task.id === taskId ? { ...task, completed: !task.completed } : task,
-			),
-		);
+	const {
+		isUserReady,
+		authDate,
+		//fns
+		isStaking,
+		userData,
+		isUserLoading,
+		isFetchingUserSuccess,
+		userError,
+		isUserError,
+	} = useUser();
 
-		const task = tasks.find((t) => t.id === taskId);
-		if (task) {
-			toast({
-				title: task.completed ? "Task Uncompleted" : "Task Completed!",
-				description: task.completed
-					? `You've uncompleted "${task.title}". You can always do it later!`
-					: `Great job! You've earned ${task.points} Vibe Points for completing "${task.title}".`,
-				variant: task.completed ? "destructive" : "default",
-			});
-		}
-	};
+	const { startTask } = useTasks();
 
-	const totalPoints = tasks.reduce((sum, task) => sum + task.points, 0);
-	const earnedPoints = tasks
-		.filter((task) => task.completed)
-		.reduce((sum, task) => sum + task.points, 0);
+	const {
+		data: alltasks,
+		isLoading,
+		isSuccess,
+		isError,
+	} = useQuery({
+		queryFn: async () => {
+			const res = await axios.get<Task[]>("/apis/admin/tasks");
+			return res.data;
+		},
+		queryKey: ["tasks"],
+	});
+
+	console.log({ alltasks });
+
+	// const handleTaskCompletion = (taskId: string) => {
+	// 	setTasks((prevTasks) =>
+	// 		prevTasks.map((task) =>
+	// 			task.id === taskId ? { ...task, completed: !task.completed } : task,
+	// 		),
+	// 	);
+
+	// 	const task = tasks.find((t) => t.id === taskId);
+	// 	if (task) {
+	// 		toast({
+	// 			title: task.completed ? "Task Uncompleted" : "Task Completed!",
+	// 			description: task.completed
+	// 				? `You've uncompleted "${task.title}". You can always do it later!`
+	// 				: `Great job! You've earned ${task.points} Vibe Points for completing "${task.title}".`,
+	// 			variant: task.completed ? "destructive" : "default",
+	// 		});
+	// 	}
+	// };
+
+	// const totalPoints = tasks.reduce((sum, task) => sum + task.points, 0);
+	// const earnedPoints = tasks
+	// 	.filter((task) => task.completed)
+	// 	.reduce((sum, task) => sum + task.points, 0);
+	// const progressPercentage = (earnedPoints / totalPoints) * 100;
+
+	const totalPoints =
+		alltasks?.reduce((sum, task) => sum + Number(task.points), 0) || 0;
+	const earnedPoints =
+		userData?.TaskCompletions?.filter(
+			(completion) =>
+				completion.status === "COMPLETED" &&
+				alltasks?.some((dailyTask) => dailyTask.id === completion.task.id),
+		).reduce((sum, completion) => sum + Number(completion.task.points), 0) || 0;
+
 	const progressPercentage = (earnedPoints / totalPoints) * 100;
 
-	const TaskList = ({ tasks, type }: { tasks: Task[]; type: TaskType }) => (
+	const isTaskCompletedAndClaimed = (taskId: string) => {
+		return (
+			userData?.TaskCompletions?.find((task) => task.taskId === taskId)
+				?.completed !== null
+		);
+	};
+	const isClaimed = (taskId: string) => {
+		return userData?.Rewards.find((reward) => reward.taskId === taskId)
+			?.claimed;
+	};
+
+	const TaskList = ({ tasks, type }: { tasks: Task[]; type: TaskCategory }) => (
 		<div className="space-y-4">
 			{tasks
-				.filter((task) => task.taskType === type)
+				.filter((task) => task.category === type)
 				.map((task) => (
 					<Card
 						key={task.id}
 						className={`transition-colors ${
-							task.completed ? "bg-primary/10" : "bg-card"
+							isTaskCompletedAndClaimed(task.id) ? "bg-primary/10" : "bg-card"
 						}`}>
 						<CardContent className="flex justify-between items-center p-4">
 							<div className="space-y-1">
 								<p className="text-card-foreground font-medium">{task.title}</p>
 								<Badge variant="secondary" className="text-primary">
-									+{task.points} pOCT
+									+{Number(task.points)} pOCT
 								</Badge>
 							</div>
-							<Button
-								variant={task.completed ? "secondary" : "default"}
-								size="sm"
-								onClick={() => handleTaskCompletion(task.id)}
-								className="min-w-[80px]">
-								{task.completed ? (
-									<>
-										<CheckCircle2 className="w-4 h-4 mr-2" />
-										Done
-									</>
-								) : (
-									<>
-										<Circle className="w-4 h-4 mr-2" />
-										Do It
-									</>
-								)}
-							</Button>
+							{isTaskCompletedAndClaimed(task.id) ? (
+								<Button disabled>Claimed</Button>
+							) : (
+								<>
+									{userData?.TaskCompletions.find((task) => task.id === task.id)
+										?.status === "NOT_STARTED" ? (
+										<Button>
+											<Circle className="w-4 h-4 mr-2" />
+											Start
+										</Button>
+									) : userData?.TaskCompletions.find(
+											(task) => task.id === task.id,
+									  )?.status === "IN_PROGRESS" ? (
+										<Button>Verify Task</Button>
+									) : (
+										userData?.TaskCompletions.find(
+											(task) => task.id === task.id,
+										)?.status === "COMPLETED" && <Button>Claim</Button>
+									)}
+								</>
+							)}
 						</CardContent>
 					</Card>
 				))}
@@ -142,7 +161,7 @@ export default function Earn() {
 			</div>
 			<Tabs
 				value={activeTab}
-				onValueChange={(value) => setActiveTab(value as TaskType)}
+				onValueChange={(value) => setActiveTab(value as TaskCategory)}
 				className="w-full">
 				<TabsList className="w-full">
 					<TabsTrigger value="based" className="w-full">
@@ -158,13 +177,13 @@ export default function Earn() {
 
 				<div className="mt-4">
 					<TabsContent value="based">
-						<TaskList tasks={tasks} type="based" />
+						<TaskList tasks={alltasks ?? []} type="BASED" />
 					</TabsContent>
 					<TabsContent value="onchain">
-						<TaskList tasks={tasks} type="onchain" />
+						<TaskList tasks={alltasks ?? []} type="ONCHAIN" />
 					</TabsContent>
 					<TabsContent value="partner">
-						<TaskList tasks={tasks} type="partner" />
+						<TaskList tasks={alltasks ?? []} type="PARTNER" />
 					</TabsContent>
 				</div>
 			</Tabs>

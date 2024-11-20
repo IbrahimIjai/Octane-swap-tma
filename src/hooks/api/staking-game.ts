@@ -2,19 +2,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { useToast } from "../use-toast";
-// import { poolInfo } from "@/utils/staking-protocol-helpers";
-import { StakingPool, StakingPosition, User } from "@prisma/client";
-
-export interface UserWithStaking extends User {
-	StakingPositions: (StakingPosition & { pool: StakingPool })[];
-}
+import { LocalUser } from "@/utils/types";
 
 //Depreciated
 
 export const useUserStake = ({
 	userWithStaking,
 }: {
-	userWithStaking: UserWithStaking;
+	userWithStaking: LocalUser;
 }) => {
 	const { toast } = useToast();
 	const queryClient = useQueryClient();
@@ -57,7 +52,7 @@ export const useUserStake = ({
 	});
 
 	const stake = async () => {
-		const amount = "0"
+		const amount = "0";
 
 		console.log(amount);
 		return stakeMutation.mutateAsync({ userId: userWithStaking.id, amount });
@@ -131,7 +126,6 @@ export const useUserStake = ({
 		isStakeSuccess: stakeMutation.isSuccess,
 		isStakeError: stakeMutation.isError,
 		stakeError: stakeMutation.error,
-
 
 		// totalStaked: getTotalStaked(),
 		isCurrentlyStaking,

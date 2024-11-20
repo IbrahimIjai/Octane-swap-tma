@@ -48,8 +48,9 @@ const taskSchema = z.object({
 	title: z.string().min(1, "Title is required"),
 	points: z.number().min(1, "Points must be at least 1"),
 	type: z.enum([
-		"TWITTER",
-		"TELEGRAM",
+		"TWITTER_FOLLOW",
+		"TWITTER_QUOTE_RETWEET",
+		"TELEGRAM_JOIN",
 		"INVITE",
 		"SHARE_POST",
 		"TRADING",
@@ -58,13 +59,6 @@ const taskSchema = z.object({
 		"DAILY_CHECK_IN",
 	]),
 	category: z.enum(["BASED", "ONCHAIN", "PARTNER"]),
-	// action: z.enum([
-	// 	"JOIN_TELEGRAM",
-	// 	"SHARE_STORY",
-	// 	"BOOST_CHANNEL",
-	// 	"INVITE_FRIEND",
-	// 	"CUSTOM",
-	// ]),
 	frequency: z.enum(["DAILY", "WEEKLY", "ONE_TIME"]),
 	actionData: z.string().min(1, "Action data is required"),
 });
@@ -81,7 +75,7 @@ export default function AdminTaskManager() {
 		defaultValues: {
 			title: "",
 			points: 0,
-			type: "TWITTER",
+			type: "TWITTER_FOLLOW",
 			category: "BASED",
 			// action: "CUSTOM",
 			actionData: "",
@@ -235,9 +229,15 @@ export default function AdminTaskManager() {
 													<SelectValue placeholder="Select task type" />
 												</SelectTrigger>
 											</FormControl>
+
 											<SelectContent>
-												<SelectItem value="TWITTER">Twitter</SelectItem>
-												<SelectItem value="TELEGRAM">Telegram</SelectItem>
+												<SelectItem value="TWITTER_FOLLOW">
+													Twitter flow
+												</SelectItem>
+												<SelectItem value="TWITTER_QUOTE_RETWEET">
+													Twitter quote
+												</SelectItem>
+												<SelectItem value="TELEGRAM_JOIN">Telegram join</SelectItem>
 												<SelectItem value="INVITE">Invite</SelectItem>
 												<SelectItem value="SHARE_POST">Share Post</SelectItem>
 												<SelectItem value="TRADING">Trading</SelectItem>

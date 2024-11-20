@@ -63,7 +63,7 @@ model TaskCompletion {
   userId    String
   task      Task       @relation(fields: [taskId], references: [id])
   taskId    String
-  status    TaskStatus
+  status    TaskStatus  @default(NOT_STARTED)
   completed DateTime   @default(now())
 
   @@unique([userId, taskId])

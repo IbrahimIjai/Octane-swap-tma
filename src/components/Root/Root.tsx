@@ -1,29 +1,10 @@
 "use client";
-
-// import { type PropsWithChildren, useEffect, useMemo, useState } from "react";
-// import {
-// 	SDKProvider,
-// 	useLaunchParams,
-// 	useMiniApp,
-// 	useThemeParams,
-// 	useViewport,
-// 	bindMiniAppCSSVars,
-// 	bindThemeParamsCSSVars,
-// 	bindViewportCSSVars,
-// } from "@telegram-apps/sdk-react";
-// import { AppRoot } from "@telegram-apps/telegram-ui";
-
-// import { ErrorBoundary } from "@/components/ErrorBoundary";
-// import { ErrorPage } from "@/components/ErrorPage";
-// import { useTelegramMock } from "@/hooks/useTelegramMock";
-// import { useDidMount } from "@/hooks/useDidMount";
-
 import "./styles.css";
 import { ProvidersForFuel } from "./fuel/fuel-provider";
 import Notifications from "../notifications";
 import PageLoadingUi from "../loaders/page-loading";
 import { type PropsWithChildren, useEffect, useMemo, useState } from "react";
-import { useLaunchParams, miniApp, useSignal } from "@telegram-apps/sdk-react";
+import { useLaunchParams, miniApp, useSignal, showBackButton, isBackButtonVisible } from "@telegram-apps/sdk-react";
 import { AppRoot } from "@telegram-apps/telegram-ui";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -44,7 +25,10 @@ function RootInner({ children }: PropsWithChildren) {
 	useClientOnce(() => {
 		init(lp.startParam === "debug");
 	});
-
+	if (showBackButton.isAvailable()) {
+		showBackButton();
+		isBackButtonVisible(); // true
+	}
 	const isDark = useSignal(miniApp.isDark);
 	const manifestUrl = useMemo(() => {
 		return new URL("tonconnect-manifest.json", window.location.href).toString();
@@ -55,13 +39,14 @@ function RootInner({ children }: PropsWithChildren) {
 	return (
 		<AppRoot
 			appearance={isDark ? "dark" : "light"}
+
 			platform={["macos", "ios"].includes(lp.platform) ? "ios" : "base"}>
 			<ProvidersForFuel>
 				<Notifications
 					isVisible={showNotification}
 					setIsVisible={setShowNotification}
 				/>
-				<div className={`${showNotification ? "pt-36" : "pt-10"} px-2 pb-32`}>
+				<div className={`${showNotification ? "pt-36" : "pt-10"} px-2 pb-32 h-full`}>
 					{children}
 				</div>
 			</ProvidersForFuel>
@@ -79,7 +64,7 @@ export function Root(props: PropsWithChildren) {
 			<RootInner {...props} />
 		</ErrorBoundary>
 	) : (
-		<div className="root__loading">
+		<div className="root__loading h-full">
 			<PageLoadingUi />
 		</div>
 	);

@@ -19,13 +19,24 @@ export async function GET(req: NextRequest) {
 	}
 
 	try {
-		console.log({ telegramId, mesage: "In" });
 		const user = await prisma.user.findUnique({
 			where: { telegramId },
 			include: {
 				StakingPositions: {
 					include: {
 						pool: true,
+					},
+				},
+
+				TaskCompletions: {
+					include: {
+						task: true,
+					},
+				},
+
+				Rewards: {
+					include: {
+						task: true,
 					},
 				},
 			},
@@ -114,4 +125,3 @@ export async function POST(req: NextRequest) {
 		);
 	}
 }
-

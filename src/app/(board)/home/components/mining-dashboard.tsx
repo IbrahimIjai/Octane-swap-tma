@@ -47,35 +47,15 @@ interface MiningStats {
 	isStaked: boolean;
 }
 
-function MiningDashboard() {
-	const {
-		isUserReady,
-		authDate,
-		//fns
-		claim,
-		isClaiming,
-		isClaimingSuccess,
-		isClaimError,
-
-		stake,
-		isStaking,
-		isStakeSuccess,
-		isStakeError,
-		stakeError,
-
-		//data
-		isCurrentlyStaking,
-		hasClaimableRewards,
-		positionsInfo,
-		totalUserStakings,
-
-		userData,
-		isUserLoading,
-		isFetchingUserSuccess,
-		userError,
-		isUserError,
-	} = useUser();
-
+function MiningDashboard({
+	userData,
+	isUserLoading,
+	isStaking,
+}: {
+	userData: UserWithStaking | undefined;
+	isUserLoading: boolean;
+	isStaking: boolean;
+}) {
 	const {
 		pools,
 		currentPool,

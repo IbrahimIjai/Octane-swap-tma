@@ -7,8 +7,8 @@ import { useIsMounted } from "connectkit";
 import axios from "axios";
 import { User } from "@prisma/client";
 import { useRouter } from "next/navigation";
-import { UserWithStaking } from "./staking-game";
 import { useToast } from "../use-toast";
+import { LocalUser } from "../../utils/types";
 
 export const useUser = () => {
 	console.log({ initData });
@@ -33,7 +33,7 @@ export const useUser = () => {
 	} = useQuery({
 		queryKey: ["user", telegramId],
 		queryFn: async () => {
-			const response = await axios.get<UserWithStaking>(
+			const response = await axios.get<LocalUser>(
 				`/apis/user?telegramId=${telegramId}`,
 			);
 			return response.data;
@@ -154,18 +154,7 @@ export const useUser = () => {
 	};
 
 	const stake = async () => {
-		// if (!userData) {
-		// 	return toast({
-		// 		variant: "destructive",
-		// 		title: "Staking failed",
-		// 		description: `There was a problem with your request: user not initalized`,
-		// 	});
-		// }
-		// const amount = (
-		// 	Number(userData.poctBalance) + Number(userData.telegramAgeOCTRewards)
-		// ).toString();
-		// console.log(amount);
-		// return stakeMutation.mutateAsync({ userId: userData.id, amount });
+	
 	};
 
 	const claim = async ({ poolId }: { poolId: string }) => {
