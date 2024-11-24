@@ -73,7 +73,7 @@ export const useTasks = () => {
 	// Helper function to get social media URL
 	const getSocialMediaUrl = (task: Task): string | null => {
 		const actionData = task.actionData as { [key: string]: string };
-
+		console.log({ actionData });
 		switch (task.type) {
 			case "TWITTER_FOLLOW":
 				return `https://twitter.com/${actionData?.username}`;
@@ -102,7 +102,7 @@ export const useTasks = () => {
 	const handleTaskStart = async (task: Task, userId: string) => {
 		await startTaskMutation.mutateAsync({ userId, taskId: task.id });
 		const socialUrl = getSocialMediaUrl(task);
-
+		console.log({ socialUrl });
 		if (socialUrl) {
 			openLink(`${socialUrl}`, {
 				tryBrowser: "chrome",

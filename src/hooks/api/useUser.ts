@@ -2,7 +2,7 @@
 
 import { calculateTelegramAgeReward } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { initData } from "@telegram-apps/sdk-react";
+import { initData, sendData } from "@telegram-apps/sdk-react";
 import { useIsMounted } from "connectkit";
 import axios from "axios";
 import { User } from "@prisma/client";
@@ -161,7 +161,9 @@ export const useUser = () => {
 			throw new Error("User not ready");
 		}
 		const referralCode = initData?.startParam();
-
+		if (sendData.isAvailable()) {
+			sendData("my-data-goes-here");
+		}
 		return createUserMutation.mutateAsync({
 			telegramId: telegramId!,
 			referralCode,
