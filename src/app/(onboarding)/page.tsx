@@ -102,7 +102,7 @@ export default function RewardsCalculator() {
 							Welcome to OctaneSwap {initData?.user()?.firstName}
 						</motion.h2>
 						<div className="text-2xl font-semibold">
-							{startParams ?? startParams}
+							startparMS{startParams ?? startParams}
 						</div>
 						<motion.div
 							initial={{ opacity: 0, y: 20 }}
