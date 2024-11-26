@@ -82,7 +82,6 @@ export async function POST(req: NextRequest) {
 			const newUser = await tx.user.create({
 				data: {
 					telegramId,
-					referralCode: telegramId,
 				},
 			});
 

@@ -192,6 +192,7 @@ export const useUser = () => {
 		}
 		return getReferralLinkMutation.mutateAsync();
 	};
+	
 	return {
 		isUserReady,
 		authDate,

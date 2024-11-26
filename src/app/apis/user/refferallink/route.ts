@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { OCTANESWAP_BOT_LINK } from "@/lib/config";
+import crypto from "crypto";
+
+const SALT = process.env.REFERRAL_ID_SALT || "default_salt_change_this";
 
 export async function GET(req: Request) {
 	const { searchParams } = new URL(req.url);
@@ -13,14 +16,30 @@ export async function GET(req: Request) {
 	try {
 		const user = await prisma.user.findUnique({
 			where: { telegramId },
-			select: { referralCode: true },
+			// select: { referralCode: true },
 		});
 
+		console.log({ user });
+		let referralLink;
 		if (!user) {
-			return NextResponse.json({ error: "User not found" }, { status: 404 });
+			return NextResponse.json({ error: "User not found" }, { status: 400 });
 		}
 
-		const referralLink = `${OCTANESWAP_BOT_LINK}?startapp=${telegramId}`;
+		if (user.referralCode) {
+			referralLink = `${OCTANESWAP_BOT_LINK}?startapp=${user.referralCode}`;
+		} else {
+			const hash = crypto.createHash("sha256");
+			hash.update(user.id + SALT);
+			const fullHash = hash.digest("hex");
+
+			const referralIdGen = fullHash.slice(0, 8);
+			referralLink = `${OCTANESWAP_BOT_LINK}?startapp=${referralIdGen}`;
+			await prisma.user.update({
+				where: { id: user.id },
+				data: { referralCode: referralIdGen },
+			});
+		}
+		console.log({ referralLink });
 
 		return NextResponse.json({ referralLink });
 	} catch (error) {
