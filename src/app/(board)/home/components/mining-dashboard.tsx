@@ -9,7 +9,6 @@ import { ArrowRight, Zap, Flame, Rocket, Check } from "lucide-react";
 import MiningDashboardSkeleton from "@/components/loaders/dashboard-loader";
 import { LocalUser } from "@/utils/types";
 
-
 function MiningDashboard({
 	userData,
 	isUserLoading,
@@ -41,8 +40,6 @@ function MiningDashboard({
 	}
 
 	const userBalance = Number(userData.totalRewards);
-
-	console.log({ currentPool, pools, userBalance });
 
 	return (
 		<Card className="w-full max-w-md mx-auto my-6 border-none">

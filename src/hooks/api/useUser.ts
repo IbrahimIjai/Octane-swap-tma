@@ -8,10 +8,9 @@ import axios from "axios";
 import { User } from "@prisma/client";
 import { useRouter } from "next/navigation";
 import { useToast } from "../use-toast";
-import { LocalUser } from "../../utils/types";
+import { LocalUser, LocalUserRespons } from "../../utils/types";
 
 export const useUser = () => {
-	console.log({ initData });
 	const isMounted = useIsMounted();
 	const queryClient = useQueryClient();
 	const { toast } = useToast();
@@ -33,10 +32,10 @@ export const useUser = () => {
 	} = useQuery({
 		queryKey: ["user", telegramId],
 		queryFn: async () => {
-			const response = await axios.get<LocalUser>(
+			const response = await axios.get<LocalUserRespons>(
 				`/apis/user?telegramId=${telegramId}`,
 			);
-			return response.data;
+			return response.data.user;
 		},
 		enabled: isUserReady,
 	});
@@ -206,7 +205,7 @@ export const useUser = () => {
 		createError: createUserMutation.error,
 
 		//getting user
-		userData,
+		userData: userData,
 		isUserLoading,
 		isFetchingUserSuccess,
 		isUserError,

@@ -42,8 +42,8 @@ export const TELEGRAM_AGE_POOL =
 export const MAX_ACCOUNT_AGE_DAYS = 365 * 2; // Cap at 2 years for fairness
 export const MIN_ACCOUNT_AGE_DAYS = 30; // Minimum age requirement
 export const DEFAULT_TWITTER_USERNAME = "octaneswap";
-export const TOTAL_POOL_SIZE= 1_000_000
+export const TOTAL_POOL_SIZE = 1_000_000;
 export const SECONDS_PER_YEAR = 31536000;
 
-export const OCTANESWAP_TG_COMMUNITY = "t.me/octaneswap";
-export const OCTANESWAP_BOT_LINK = "https://t.me/octaneswapbot";
+export const OCTANESWAP_TG_COMMUNITY = "https://t.me/octaneswap";
+export const OCTANESWAP_BOT_LINK = "https://t.me/octaneswapbot/octaneswaptma";

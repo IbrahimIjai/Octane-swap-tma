@@ -36,7 +36,6 @@ export async function GET(req: Request) {
 
 		return NextResponse.json(stats);
 	} catch (error) {
-		console.error("Error fetching referral stats:", error);
 		return NextResponse.json(
 			{ error: "Internal server error" },
 			{ status: 500 },

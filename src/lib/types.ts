@@ -1,4 +1,5 @@
 import { PoolCategory, PoolName } from "@prisma/client";
+import { JsonArray } from "@prisma/client/runtime/library";
 
 export interface StakingPool {
 	id: string;
@@ -20,3 +21,26 @@ export interface CreatePoolDTO {
 	startTime: string;
 	endTime: string;
 }
+
+//  type JsonValue =
+// 	| string
+// 	| number
+// 	| boolean
+// 	| null
+// 	| JsonValue[]
+// 	| { [key: string]: JsonValue };
+
+type JsonObject = {
+	[x: string]: JsonValue | undefined;
+};
+
+ export type JsonValue = string | number | boolean | JsonObject | JsonArray | null;
+
+	
+export interface ActionData {
+	username?: string;
+	tweetId?: string;
+	groupUsername?: string;
+	[key: string]: JsonValue | undefined;
+}
+

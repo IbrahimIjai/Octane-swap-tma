@@ -3,6 +3,8 @@ import axios, { AxiosError } from "axios";
 import { useToast } from "../use-toast";
 import { Task, TaskCompletion } from "@prisma/client";
 import { openLink } from "@telegram-apps/sdk-react";
+import { ActionData } from "@/lib/types";
+import { JsonValue } from "@prisma/client/runtime/library";
 
 interface TaskData {
 	userId: string;
@@ -70,26 +72,62 @@ export const useTasks = () => {
 		onError: handleError,
 	});
 
+	const claimTaskMutation = useMutation({
+		mutationFn: async ({ userId, taskId }: TaskData) => {
+			const { data } = await axios.post("/apis/user/tasks/claim", {
+				userId,
+				taskId,
+			});
+			return data;
+		},
+		onSuccess: (data) => {
+			toast({
+				title: "Task Verified",
+				description: data.message || "Task completed successfully!",
+			});
+			invalidateTaskQueries();
+		},
+		onError: handleError,
+	});
+
 	// Helper function to get social media URL
+	const parseActionData = (actionData: JsonValue | null): ActionData => {
+		if (typeof actionData === "string") {
+			try {
+				return JSON.parse(actionData) as ActionData;
+			} catch (e) {
+				console.error("Error parsing actionData:", e);
+				return {};
+			}
+		}
+
+		if (typeof actionData === "object" && actionData !== null) {
+			return actionData as ActionData;
+		}
+
+		return {};
+	};
+
 	const getSocialMediaUrl = (task: Task): string | null => {
-		const actionData = task.actionData as { [key: string]: string };
-		console.log({ actionData });
+		const parsedActionData = parseActionData(task.actionData);
+
 		switch (task.type) {
 			case "TWITTER_FOLLOW":
-				return `https://twitter.com/${actionData?.username}`;
+				return typeof parsedActionData.username === "string"
+					? `https://twitter.com/${parsedActionData.username}`
+					: null;
 			case "TWITTER_QUOTE_RETWEET":
-				return `https://twitter.com/intent/retweet?tweet_id=${actionData?.tweetId}`;
-			// case "YOUTUBE_SUBSCRIBE":
-			// 	return `https://youtube.com/channel/${actionData?.channelId}`;
-			// case "INSTAGRAM_FOLLOW":
-			// 	return `https://instagram.com/${actionData?.username}`;
+				return typeof parsedActionData.tweetId === "string"
+					? `https://twitter.com/intent/retweet?tweet_id=${parsedActionData.tweetId}`
+					: null;
 			case "TELEGRAM_JOIN":
-				return `https://t.me/${actionData?.groupUsername}`;
+				return typeof parsedActionData.groupUsername === "string"
+					? `https://t.me/${parsedActionData.groupUsername}`
+					: null;
 			default:
 				return null;
 		}
 	};
-
 	const requiresAdminVerification = (taskType: string): boolean => {
 		return [
 			"TWITTER_FOLLOW",
@@ -110,17 +148,6 @@ export const useTasks = () => {
 			});
 		}
 	};
-	const handleVerifyTaskMutation = useMutation({
-		mutationFn: async (data: { userId: string; taskId: String }) =>
-			await axios.post("/apis/user/tasks/verify", data),
-
-		onSuccess: () => {
-			toast({
-				title: "Starting task",
-				description: "Your task is in progress",
-			});
-		},
-	});
 
 	return {
 		startTask: handleTaskStart,
@@ -130,6 +157,10 @@ export const useTasks = () => {
 		verifyTask: verifyTaskMutation.mutateAsync,
 		isVerifying: verifyTaskMutation.isPending,
 		verifyError: verifyTaskMutation.error,
+
+		claimRewards: claimTaskMutation.mutateAsync,
+		isClaiming: claimTaskMutation.isPending,
+		isClaimError: claimTaskMutation.error,
 
 		requiresAdminVerification,
 		getSocialMediaUrl,

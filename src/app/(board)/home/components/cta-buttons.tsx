@@ -16,7 +16,6 @@ export default function CTAButtons() {
 				window.open(`${OCTANESWAP_TG_COMMUNITY}`, "_blank");
 			}
 		} catch (error) {
-			console.error("Error opening Telegram:", error);
 			// Fallback to regular link
 			window.open(`${OCTANESWAP_TG_COMMUNITY}`, "_blank");
 		}

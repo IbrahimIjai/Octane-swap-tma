@@ -34,8 +34,6 @@ const DailyTasks = ({
 		},
 		queryKey: ["tasks"],
 	});
-	console.log({ alltasks });
-	console.log({ dailyTasks });
 	useEffect(() => {
 		const _dailyTasks: Task[] = alltasks?.length
 			? alltasks.filter((task) => task.frequency === "DAILY")
@@ -124,6 +122,34 @@ const DailyTasks = ({
 			?.claimed;
 	};
 
+	const sharePost = async () => {
+		try {
+			if (shareStory.isAvailable()) {
+				await shareStory("/banner.png", {
+					text: "Today is a good day to join the octane swap ecosystem",
+					widgetLink: {
+						url: "https://t.me/heyqbnk",
+						name: "heyqbnk public group",
+					},
+				});
+				toast({ title: "Story shared successfully!", });
+			} else {
+				toast({
+					variant:"destructive",
+					title: "Upgrade Required",
+					description: "Please upgrade Telegram to share stories.",
+					
+				});
+			}
+		} catch (error) {
+			toast({
+				title: "Error",
+				description:
+					"An error occurred while sharing the story. Please try again later.",
+				variant: "destructive",
+			});
+		}
+	};
 	return (
 		<Card className="w-full max-w-2xl mx-auto mt-8">
 			<CardHeader>
@@ -188,18 +214,7 @@ const DailyTasks = ({
 								+100 Points
 							</Badge>
 						</div>
-						<Button
-							onClick={() =>
-								shareStory("https://my.media/background.png", {
-									text: "Today was a good day. Love it! Thanks to this public!",
-									widgetLink: {
-										url: "https://t.me/heyqbnk",
-										name: "heyqbnk public group",
-									},
-								})
-							}>
-							Share on story
-						</Button>
+						<Button onClick={sharePost}>Share on story</Button>
 					</CardContent>
 				</Card>
 			</CardContent>

@@ -123,9 +123,13 @@ export interface Task {
 // }
 
 // Main User type that matches your API response
+
+export interface LocalUserRespons {
+	user: LocalUser;
+}
 export interface LocalUser extends User {
 	// StakingPositions: StakingPosition[];
-	TaskCompletions: (TaskCompletion & {task:Task})[];
+	TaskCompletions: (TaskCompletion & { task: Task })[];
 	Rewards: Reward[];
 	StakingPositions: (StakingPosition & { pool: StakingPool })[];
 }

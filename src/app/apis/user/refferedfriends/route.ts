@@ -31,7 +31,6 @@ export async function GET(req: Request) {
 
 		return NextResponse.json(referredFriends);
 	} catch (error) {
-		console.error("Error fetching referred friends:", error);
 		return NextResponse.json(
 			{ error: "Internal server error" },
 			{ status: 500 },

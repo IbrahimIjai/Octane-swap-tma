@@ -1,83 +1,82 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import OctaneSwapLogo from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { initData, RequestedContact } from "@telegram-apps/sdk-react";
-import { calculateAccountAge, calculateTelegramAgeReward } from "@/lib/utils";
+import { initData } from "@telegram-apps/sdk-react";
+import { calculateTelegramAgeReward } from "@/lib/utils";
 import { useUser } from "@/hooks/api/useUser";
-import { redirect, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import PageLoadingUi from "@/components/loaders/page-loading";
 
-export default function RewardsCalculator() {
+export default function OnboardingPage() {
 	const { push } = useRouter();
+	const [showWelcome, setShowWelcome] = useState(false);
 
 	const {
 		isUserReady,
-		authDate,
 		telegramId,
 		isBot,
-
 		userData,
 		isUserLoading,
 		isFetchingUserSuccess,
-		userError,
-		isUserError,
-
 		createUser,
 		isCreateSuccess,
 		isCreating,
-		createError,
 		isCreateError,
 	} = useUser();
 
-	const startParams = initData.startParam();
-	const accountAge = calculateAccountAge(telegramId ?? "");
 	const rewards = calculateTelegramAgeReward(telegramId ?? "");
 
-	const userExist = userData && userData?.telegramId;
+	useEffect(() => {
+		if (isBot) {
+			throw new Error("Bots are not allowed");
+		}
 
-	console.log({ userData, userExist });
-
-	if (isBot) {
-		throw new Error();
-	}
+		if (isUserReady && !isUserLoading) {
+			if (userData) {
+				push("/home");
+			} else {
+				setShowWelcome(true);
+			}
+		}
+	}, [isUserReady, isUserLoading, userData, isBot, push]);
 
 	useEffect(() => {
-		if (userExist) {
+		if (isCreateSuccess) {
 			push("/home");
 		}
-	}, [isFetchingUserSuccess, isUserLoading]);
+	}, [isCreateSuccess, push]);
 
-	const isLoading = isUserLoading || isCreating;
-	// if (userExist) {
-	// 	redirect("/home");
-	// }
+	const handleContinue = async () => {
+		setShowWelcome(false);
+		await createUser();
+	};
 
-	if (isLoading || !isUserReady) {
-		return (
-			<>
-				<div>
-					<PageLoadingUi />
-				</div>
-			</>
-		);
+	if (isUserLoading || !isUserReady || isCreating) {
+		return <PageLoadingUi />;
 	}
-	if (isUserError || isCreateError) {
+
+	if (isCreateError) {
 		return (
 			<motion.div
 				initial={{ opacity: 0, y: 20 }}
 				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.5, delay: 0.8 }}
+				transition={{ duration: 0.5 }}
 				className="text-center">
 				<p className="text-lg font-medium mb-4">
-					There was an error calculating your rewards. Please try again later.
+					There was an error creating your account. Please try again later.
 				</p>
 			</motion.div>
 		);
 	}
+
+	if (!showWelcome) {
+		return <PageLoadingUi />;
+	}
+
 	return (
 		<div className="relative min-h-screen flex flex-col items-center justify-center bg-background text-foreground">
 			<motion.div
@@ -101,30 +100,23 @@ export default function RewardsCalculator() {
 							className="text-2xl font-bold mb-4">
 							Welcome to OctaneSwap {initData?.user()?.firstName}
 						</motion.h2>
-						<div className="text-2xl font-semibold">
-							startparMS{startParams ?? startParams}
-						</div>
+
 						<motion.div
 							initial={{ opacity: 0, y: 20 }}
 							animate={{ opacity: 1, y: 0 }}
 							transition={{ duration: 0.5, delay: 0.8 }}
-							className="text-center">
-							<p>Join our community and start earning rewards!</p>
-							<p className="text-lg font-medium mb-2">
-								Your Telegram account age is{" "}
-								<span className="text-primary">{accountAge} days</span>.
+							className="text-center my-3 text-sm text-muted-foreground">
+							<p>
+								Sign up, join our community and start participating in the
+								ignition ecosystem! Here you complete tasks and earn rewards.
 							</p>
-							<p className="text-lg font-medium mb-4">
-								You have earned{" "}
-								<span className="text-primary">{rewards} points</span> for your
-								onboarding.
+							<p className="text-lg font-medium my-4 ">
+								You have earned a welcoming bonus of{" "}
+								<span className="text-primary">{rewards} pOCT</span>
 							</p>
 
-							{/* //create user */}
-							<Button
-								onClick={async () => await createUser()}
-								className="w-full">
-								{isCreating ? "Creaing Account" : "Create Account"}
+							<Button onClick={handleContinue} className="w-full">
+								{isCreating ? "Creating Account" : "Continue to claim"}
 							</Button>
 						</motion.div>
 					</CardContent>

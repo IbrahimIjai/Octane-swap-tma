@@ -34,7 +34,14 @@ export default function Earn() {
 
 	const {
 		startTask,
+		isStarting,
+
 		verifyTask,
+		isVerifying,
+
+		claimRewards,
+		isClaiming,
+
 		requiresAdminVerification,
 		getSocialMediaUrl,
 	} = useTasks();
@@ -51,8 +58,6 @@ export default function Earn() {
 		},
 		queryKey: ["tasks"],
 	});
-
-	console.log({ alltasks });
 
 	const totalPoints =
 		alltasks?.reduce((sum, task) => sum + Number(task.points), 0) || 0;
@@ -116,6 +121,7 @@ export default function Earn() {
 		const status = getTaskStatus(task.id);
 
 		if (status === "NOT_STARTED" || status === "FAILED") {
+			console.log({ task });
 			await startTask(task, userData.id);
 			if (task.type.startsWith("TWITTER_") || task.type === "TELEGRAM_JOIN") {
 				const url = getSocialMediaUrl(task);
@@ -128,6 +134,7 @@ export default function Earn() {
 			await verifyTask({ userId: userData.id, taskId: task.id });
 		} else if (status === "COMPLETED") {
 			// Implement claim logic here
+			await claimRewards({ userId: userData.id, taskId: task.id });
 			toast({
 				title: "Success",
 				description: "Rewards claimed successfully!",
@@ -135,6 +142,7 @@ export default function Earn() {
 			queryClient.invalidateQueries({ queryKey: ["user"] });
 		}
 	};
+	const trxLoading = isClaiming || isStarting || isVerifying;
 	const TaskList = ({ tasks, type }: { tasks: Task[]; type: TaskCategory }) => (
 		<div className="space-y-4">
 			{tasks
@@ -182,7 +190,7 @@ export default function Earn() {
 				COMPLETE TASKS AND EARN REWARDS
 			</p>
 
-			<div className="mt-6">
+			<div className="my-6">
 				<p className="text-sm text-muted-foreground">
 					Progress: {earnedPoints}/{totalPoints} pOCT (
 					{Math.round(progressPercentage)}%)
@@ -204,7 +212,9 @@ export default function Earn() {
 					</TabsTrigger>
 				</TabsList>
 
-				<div className="mt-4">
+				{trxLoading && <Loader2 className="w-4 h-4 animate-spin mx-2 mt-4" />}
+
+				<div className="my-2">
 					<TabsContent value="based">
 						<TaskList tasks={alltasks ?? []} type="BASED" />
 					</TabsContent>

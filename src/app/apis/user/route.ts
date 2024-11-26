@@ -43,12 +43,11 @@ export async function GET(req: NextRequest) {
 		});
 
 		if (!user) {
-			return NextResponse.json({ user: undefined });
+			return NextResponse.json({ user: undefined }, { status: 200 });
 		}
 
-		return NextResponse.json(user);
+		return NextResponse.json({ user }, { status: 200 });
 	} catch (error) {
-		console.error("Error fetching user:", error);
 		return NextResponse.json(
 			{ error: "Internal server error" },
 			{ status: 500 },
@@ -124,7 +123,6 @@ export async function POST(req: NextRequest) {
 
 		return NextResponse.json(user, { status: 200 });
 	} catch (error) {
-		console.error("Error creating user:", error);
 		return NextResponse.json(
 			{ error: "Internal server error" },
 			{ status: 500 },

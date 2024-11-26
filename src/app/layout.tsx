@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: PropsWithChildren) {
 	return (
 		<html lang="en">
-			<body>
+			<body className="h-full w-full">
 				<Root>
 					{children}
 					<Toaster />
