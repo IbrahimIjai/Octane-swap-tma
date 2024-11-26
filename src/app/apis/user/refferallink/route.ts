@@ -20,8 +20,8 @@ export async function GET(req: Request) {
 			return NextResponse.json({ error: "User not found" }, { status: 404 });
 		}
 
-		const referralLink = `${OCTANESWAP_BOT_LINK}?startapp=${user.referralCode}`;
-        
+		const referralLink = `${OCTANESWAP_BOT_LINK}?startapp=${telegramId}`;
+
 		return NextResponse.json({ referralLink });
 	} catch (error) {
 		return NextResponse.json(

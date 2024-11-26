@@ -66,6 +66,7 @@ export async function POST(req: NextRequest) {
 				{ status: 400 },
 			);
 		}
+		console.log({ telegramId, referralCode });
 
 		const telegramAgeOCTRewards = calculateTelegramAgeReward(telegramId);
 
@@ -76,20 +77,27 @@ export async function POST(req: NextRequest) {
 				referrer = await tx.user.findUnique({ where: { referralCode } });
 			}
 
+			console.log({ referrer });
+
 			const newUser = await tx.user.create({
 				data: {
 					telegramId,
-					referralCode,
+					referralCode: telegramId,
 				},
 			});
 
+			console.log({ newUser });
+
 			if (referrer) {
+				console.log("creating referer")
 				await tx.referral.create({
 					data: {
 						referrerId: referrer.id,
 						referredId: newUser.id,
 					},
 				});
+
+				console.log("finished referer");
 
 				const referralReward = 100; // Set your referral reward amount
 				await tx.reward.create({

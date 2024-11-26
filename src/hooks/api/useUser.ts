@@ -138,6 +138,7 @@ export const useUser = () => {
 			});
 		},
 	});
+	
 	const getReferralLinkMutation = useMutation({
 		mutationFn: async () => {
 			const response = await axios.get(
