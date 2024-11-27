@@ -43,11 +43,13 @@ export async function GET(req: NextRequest) {
 		});
 
 		if (!user) {
-			return NextResponse.json({ user: undefined }, { status: 200 });
+			return NextResponse.json({ user });
 		}
 
+		console.log({ user });
 		return NextResponse.json({ user }, { status: 200 });
 	} catch (error) {
+		console.error("Error fetching user:", error);
 		return NextResponse.json(
 			{ error: "Internal server error" },
 			{ status: 500 },
@@ -66,7 +68,6 @@ export async function POST(req: NextRequest) {
 				{ status: 400 },
 			);
 		}
-		console.log({ telegramId, referralCode });
 
 		const telegramAgeOCTRewards = calculateTelegramAgeReward(telegramId);
 
@@ -77,18 +78,14 @@ export async function POST(req: NextRequest) {
 				referrer = await tx.user.findUnique({ where: { referralCode } });
 			}
 
-			console.log({ referrer });
-
 			const newUser = await tx.user.create({
 				data: {
 					telegramId,
+					referredBy: referrer ? { connect: { id: referrer.id } } : undefined,
 				},
 			});
 
-			console.log({ newUser });
-
 			if (referrer) {
-				console.log("creating referer")
 				await tx.referral.create({
 					data: {
 						referrerId: referrer.id,
@@ -96,9 +93,7 @@ export async function POST(req: NextRequest) {
 					},
 				});
 
-				console.log("finished referer");
-
-				const referralReward = 100; // Set your referral reward amount
+				const referralReward = 10; // Set your referral reward amount
 				await tx.reward.create({
 					data: {
 						userId: referrer.id,
@@ -106,6 +101,7 @@ export async function POST(req: NextRequest) {
 						type: "REFERRAL",
 					},
 				});
+
 				await tx.user.update({
 					where: { id: referrer.id },
 					data: { totalRewards: { increment: referralReward } },
@@ -130,8 +126,9 @@ export async function POST(req: NextRequest) {
 
 		return NextResponse.json(user, { status: 200 });
 	} catch (error) {
+		console.error("Error creating user:", error);
 		return NextResponse.json(
-			{ error: "Internal server error" },
+			{ error: error ?? "Internal server error" },
 			{ status: 500 },
 		);
 	}

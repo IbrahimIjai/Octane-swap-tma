@@ -19,6 +19,7 @@ import { useTelegramMock } from "@/hooks/useTelegramMock";
 import { useDidMount } from "@/hooks/useDidMount";
 import { init } from "@/init";
 import { useClientOnce } from "@/hooks/useClientOnce";
+import { DailyCheckInModal } from "../daily-login";
 
 function RootInner({ children }: PropsWithChildren) {
 	if (process.env.NODE_ENV === "development") {
@@ -43,7 +44,10 @@ function RootInner({ children }: PropsWithChildren) {
 		<AppRoot
 			appearance={isDark ? "dark" : "light"}
 			platform={["macos", "ios"].includes(lp.platform) ? "ios" : "base"}>
-			<ProvidersForFuel>{children}</ProvidersForFuel>
+			<ProvidersForFuel>
+				<DailyCheckInModal />
+				{children}
+			</ProvidersForFuel>
 		</AppRoot>
 	);
 }

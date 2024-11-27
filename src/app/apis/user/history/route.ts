@@ -14,6 +14,7 @@ export async function GET(req: Request) {
 			where: { userId },
 			include: {
 				task: true,
+			
 			},
 			orderBy: {
 				createdAt: "desc",

@@ -73,7 +73,7 @@ model DailyTaskReset {
   id        String   @id @default(cuid())
   user      User     @relation(fields: [userId], references: [id])
   userId    String   @unique
-  lastReset DateTime @default(now())
+  lastReset DateTime 
 }
 
 model Referral {

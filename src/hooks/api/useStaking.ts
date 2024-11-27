@@ -37,8 +37,6 @@ export const useStakingProtocol = (userId?: string) => {
 		},
 	});
 
-	console.log({ poolsInHook: pools });
-
 	// Get current active pool or next upcoming pool
 	const getCurrentPool = () => {
 		if (!pools) return null;
@@ -76,9 +74,7 @@ export const useStakingProtocol = (userId?: string) => {
 			(sum, position) => sum.plus(position.rewards),
 			new Decimal(0),
 		);
-		console.log({
-			poolsRewards: pool.positions.map((post) => Number(post.rewards)),
-		});
+
 		// Calculate progress percentage
 		const progressPercentage = Number(
 			totalRewardsMinted.div(pool.rewardAmount).times(100),
@@ -134,8 +130,6 @@ export const useStakingProtocol = (userId?: string) => {
 		},
 		enabled: !!userId,
 	});
-
-	console.log({ userPositions });
 
 	// Get current pool and its stats
 	const currentPool = getCurrentPool();

@@ -24,7 +24,6 @@ export default function ConnectButton() {
 	const { isConnected } = useIsConnected();
 	const { wallet } = useWallet();
 	const [signature, setSignature] = useState("");
-	console.log({ wallet });
 
 	return (
 		<div className="flex flex-col items-center">

@@ -9,17 +9,17 @@ import { Badge } from "@/components/ui/badge";
 import { Clock, Award } from "lucide-react";
 import { useUser } from "@/hooks/api/useUser";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Reward } from "@prisma/client";
 
-type Reward = {
-	id: string;
-	amount: number;
-	createdAt: string;
-	task: {
-		title: string;
-	} | null;
+const REWARD_TYPE_LABELS: Record<string, string> = {
+	WELCOME: "Welcome Bonus",
+	TASK_COMPLETION: "Task Completion",
+	REFERRAL: "Referral Reward",
+	DAILY_CHECK_IN: "Daily Check-In",
+	WEB3_INTERACTION: "Web3 Interaction",
 };
 
-function formatRelativeTime(timestamp: string): string {
+function formatRelativeTime(timestamp: Date): string {
 	const now = new Date();
 	const date = new Date(timestamp);
 	const diff = now.getTime() - date.getTime();
@@ -63,6 +63,7 @@ function History() {
 		},
 		enabled: !!userData?.id,
 	});
+
 	if (isLoading) {
 		return (
 			<Card className="w-full max-w-2xl mx-auto mt-6">
@@ -105,7 +106,7 @@ function History() {
 							<CardContent className="flex justify-between items-center p-4">
 								<div className="space-y-1">
 									<p className="text-card-foreground font-medium">
-										{reward.task?.title || "Reward"}
+										{REWARD_TYPE_LABELS[reward.type] || "Unknown Reward"}
 									</p>
 									<div className="flex items-center text-sm text-muted-foreground">
 										<Clock className="w-4 h-4 mr-1" />
@@ -114,7 +115,7 @@ function History() {
 								</div>
 								<div className="flex items-center gap-2">
 									<Badge variant="secondary" className="text-primary">
-										+{reward.amount}
+										+{Number(reward.amount)}
 									</Badge>
 									<Button variant="outline" size="sm">
 										pOCT

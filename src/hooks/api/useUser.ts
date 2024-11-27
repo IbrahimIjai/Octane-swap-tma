@@ -30,7 +30,7 @@ export const useUser = () => {
 		isSuccess: isFetchingUserSuccess,
 		refetch: refetchUser,
 	} = useQuery({
-		queryKey: ["user", telegramId],
+		queryKey: ["userData", telegramId],
 		queryFn: async () => {
 			const response = await axios.get<LocalUserRespons>(
 				`/apis/user?telegramId=${telegramId}`,
@@ -138,7 +138,7 @@ export const useUser = () => {
 			});
 		},
 	});
-	
+
 	const getReferralLinkMutation = useMutation({
 		mutationFn: async () => {
 			const response = await axios.get(
@@ -192,7 +192,7 @@ export const useUser = () => {
 		}
 		return getReferralLinkMutation.mutateAsync();
 	};
-	
+
 	return {
 		isUserReady,
 		authDate,
@@ -208,6 +208,7 @@ export const useUser = () => {
 
 		//getting user
 		userData: userData,
+		refetchUser,
 		isUserLoading,
 		isFetchingUserSuccess,
 		isUserError,
