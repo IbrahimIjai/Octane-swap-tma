@@ -81,19 +81,19 @@ export async function POST(req: NextRequest) {
 			const newUser = await tx.user.create({
 				data: {
 					telegramId,
-					referredBy: referrer ? { connect: { id: referrer.id } } : undefined,
 				},
 			});
 
 			if (referrer) {
+				console.log({ referrerCode: referrer.referralCode });
 				await tx.referral.create({
 					data: {
 						referrerId: referrer.id,
 						referredId: newUser.id,
 					},
 				});
+				const referralReward = 10;
 
-				const referralReward = 10; // Set your referral reward amount
 				await tx.reward.create({
 					data: {
 						userId: referrer.id,
