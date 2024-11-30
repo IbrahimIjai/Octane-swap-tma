@@ -10,6 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { useToast } from "@/hooks/use-toast";
 import { sendData } from "@telegram-apps/sdk-react";
+import PageLoadingUi from "@/components/loaders/page-loading";
 
 interface ReferredFriend {
 	id: string;
@@ -76,7 +77,7 @@ const FriendsAndReferral = () => {
 	};
 
 	if (isLoadingFriends) {
-		return <div className="p-4 text-center">Loading...</div>;
+		return <PageLoadingUi />;
 	}
 
 	const totalRewardsEarned =

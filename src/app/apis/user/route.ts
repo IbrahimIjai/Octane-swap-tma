@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
 					telegramId,
 				},
 			});
-
+			
 			if (referrer) {
 				console.log({ referrerCode: referrer.referralCode });
 				await tx.referral.create({

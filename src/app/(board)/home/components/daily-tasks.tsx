@@ -125,12 +125,9 @@ const DailyTasks = ({
 	const sharePost = async () => {
 		try {
 			if (shareStory.isAvailable()) {
-				await shareStory("/banner.png", {
+				console.log("Is share story available:", shareStory.isAvailable());
+				await shareStory("https://octane-swap-tma.vercel.app/banner.png", {
 					text: "Today is a good day to join the octane swap ecosystem",
-					widgetLink: {
-						url: "https://t.me/heyqbnk",
-						name: "heyqbnk public group",
-					},
 				});
 				toast({ title: "Story shared successfully!", });
 			} else {
@@ -153,7 +150,7 @@ const DailyTasks = ({
 	return (
 		<Card className="w-full max-w-2xl mx-auto mt-8">
 			<CardHeader>
-				<CardTitle className="text-2xl font-semibold flex items-center gap-2">
+				<CardTitle className="text-xl font-semibold flex items-center gap-2">
 					<Trophy className="w-6 h-6 text-primary" />
 					Daily Tasks
 				</CardTitle>
@@ -207,7 +204,7 @@ const DailyTasks = ({
 					`}>
 					<CardContent className="flex justify-between items-center p-4">
 						<div className="space-y-1">
-							<p className="text-card-foreground font-medium">
+							<p className="text-card-foreground text-sm">
 								Share octaneswap on your story
 							</p>
 							<Badge variant="secondary" className="text-primary">

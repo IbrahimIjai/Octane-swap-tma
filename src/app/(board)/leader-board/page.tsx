@@ -1,8 +1,13 @@
 "use client";
 
 import React from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Trophy } from "lucide-react";
+import { useUser } from "@/hooks/api/useUser";
+import axios from "axios";
+import LeaderboardCard from "./components/leaderboard-card";
 
 type LeaderboardEntry = {
 	id: string;
@@ -13,132 +18,71 @@ type LeaderboardEntry = {
 	medal?: "gold" | "silver" | "bronze";
 };
 
-type LeaderboardProps = {
+type LeaderboardData = {
 	currentUser: LeaderboardEntry;
 	topUsers: LeaderboardEntry[];
 };
 
-const LeaderboardCard = ({ currentUser, topUsers }: LeaderboardProps) => {
-	const formatScore = (score: number): string => {
-		if (score >= 1000000) {
-			return `${(score / 1000000).toFixed(2)}M`;
-		}
-		return score.toLocaleString();
-	};
+async function fetchLeaderboard(userId: string): Promise<LeaderboardData> {
+	const response = await axios.get<LeaderboardData>(
+		`/apis/user/leader-board?userId=${userId}`,
+	);
+	return response.data;
+}
 
-	const getMedalEmoji = (medal?: "gold" | "silver" | "bronze") => {
-		switch (medal) {
-			case "gold":
-				return "🥇";
-			case "silver":
-				return "🥈";
-			case "bronze":
-				return "🥉";
-			default:
-				return null;
-		}
-	};
+const LeaderBoardPage = () => {
+	const { userData, isUserLoading } = useUser();
 
-	const UserRow = ({ entry }: { entry: LeaderboardEntry }) => (
-		<div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors">
-			<div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium">
-				{entry.avatar ? (
-					<img
-						src={entry.avatar}
-						alt={entry.username}
-						className="w-full h-full rounded-full"
-					/>
-				) : (
-					<span className="text-primary">
-						{entry.username.charAt(0).toUpperCase()}
-					</span>
-				)}
-			</div>
+	const {
+		data,
+		isLoading: isLeaderBoardLoading,
+		isError,
+		error,
+	} = useQuery({
+		queryKey: ["leaderboard", userData?.id],
+		queryFn: () => fetchLeaderboard(userData?.id ?? ""),
+		enabled: !!userData && !isUserLoading,
+	});
+	console.log({ data });
 
-			<div className="flex-1 min-w-0">
-				<p className="text-sm font-medium truncate">{entry.username}</p>
-				<p className="text-xs text-muted-foreground">
-					{formatScore(entry.score)} MDOGS
-				</p>
-			</div>
+	if (isUserLoading || isLeaderBoardLoading) {
+		return (
+			<Card className="w-full max-w-md">
+				<CardContent className="pt-6">
+					<Skeleton className="w-full h-12 mb-4" />
+					<Skeleton className="w-full h-24 mb-4" />
+					<Skeleton className="w-full h-64" />
+				</CardContent>
+			</Card>
+		);
+	}
 
-			<div className="flex items-center gap-2">
-				{getMedalEmoji(entry.medal)}
-				<span className="text-sm text-muted-foreground">#{entry.rank}</span>
-			</div>
+	if (isError) {
+		return (
+			<Card className="w-full max-w-md">
+				<CardContent className="pt-6">
+					<p className="text-red-500">Error: {error.message}</p>
+				</CardContent>
+			</Card>
+		);
+	}
+
+	if (!data) {
+		return (
+			<Card className="w-full max-w-md">
+				<CardContent className="pt-6">
+					<p>No data available</p>
+				</CardContent>
+			</Card>
+		);
+	}
+	return (
+		<div className="flex w-full pb-[120px]">
+			<LeaderboardCard
+				currentUser={data.currentUser}
+				topUsers={data.topUsers}
+			/>
 		</div>
 	);
-
-	return (
-		<Card className="w-full max-w-md bg-background border-border">
-			<CardHeader className="space-y-2 pb-4">
-				<div className="flex items-center justify-between px-3">
-					<h2 className="text-xl font-bold">Leaderboard</h2>
-					<Trophy className="w-6 h-6 text-yellow-500" />
-				</div>
-			</CardHeader>
-
-			<CardContent className="space-y-4">
-				{/* Current User Position */}
-				<div className="bg-muted/30 rounded-lg p-4 border border-border">
-					<div className="text-sm text-muted-foreground mb-2">
-						Your Position
-					</div>
-					<UserRow entry={currentUser} />
-				</div>
-
-				{/* Top 500 Section */}
-				<div>
-					<div className="text-sm font-medium mb-2">TOP 500</div>
-					<div className="space-y-2">
-						{topUsers.map((entry) => (
-							<UserRow key={entry.id} entry={entry} />
-						))}
-					</div>
-				</div>
-			</CardContent>
-		</Card>
-	);
 };
-
-// Example usage
-export default function LeaderboardExample() {
-	const currentUser: LeaderboardEntry = {
-		id: "current",
-		username: "Ibrahimfi",
-		score: 44542.2126,
-		rank: 731620,
-	};
-
-	const topUsers: LeaderboardEntry[] = [
-		{
-			id: "1",
-			username: "Hermann | CATS",
-			score: 2324978325.5993,
-			rank: 1,
-			medal: "gold",
-		},
-		{
-			id: "2",
-			username: "GOATS",
-			score: 97848681.1694,
-			rank: 2,
-			medal: "silver",
-		},
-		{
-			id: "3",
-			username: "Ivan",
-			score: 80150372.9216,
-			rank: 3,
-			medal: "bronze",
-		},
-		{
-			id: "4",
-			username: "W-Coin",
-			score: 56694693.046,
-			rank: 4,
-		},
-	];
-
-	return <LeaderboardCard currentUser={currentUser} topUsers={topUsers} />;
-}
+export default LeaderBoardPage;

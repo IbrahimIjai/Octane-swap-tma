@@ -68,7 +68,7 @@ function History() {
 		return (
 			<Card className="w-full max-w-2xl mx-auto mt-6">
 				<CardHeader>
-					<CardTitle className="text-2xl font-bold flex items-center gap-2">
+					<CardTitle className="text-xl font-bold flex items-center gap-2">
 						<Award className="w-6 h-6" />
 						Rewards History
 					</CardTitle>

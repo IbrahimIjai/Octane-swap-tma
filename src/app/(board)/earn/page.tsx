@@ -178,7 +178,7 @@ export default function Earn() {
 	);
 
 	return (
-		<div className="relative min-h-screen w-full p-4">
+		<div className="relative min-h-screen w-full pb-[120px]">
 			<div
 				className="flex items-center gap-2 mb-6 cursor-pointer"
 				onClick={() => router.push("/home")}>

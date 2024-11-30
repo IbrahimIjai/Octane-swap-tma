@@ -1,7 +1,7 @@
 import { UserChatBoosts } from "node_modules/telegraf/typings/core/types/typegram";
 import { Telegram } from "telegraf";
 
-const bot = new Telegram(process.env.TELEGRAM_BOT_TOKEN!);
+const bot = new Telegram(process.env.NEXT_PUBLIC_TG_BOT_API_TOKEN!);
 
 export async function verifyTelegramJoin(
 	userId: number,

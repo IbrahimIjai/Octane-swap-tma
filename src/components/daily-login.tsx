@@ -14,16 +14,21 @@ import { useUser } from "@/hooks/api/useUser";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { usePathname } from "next/navigation";
 
 export function DailyCheckInModal() {
 	// const [isOpen, setIsOpen] = useState(false);
 	const { userData, refetchUser } = useUser();
-
+	const pathname = usePathname();
 	const queryClient = useQueryClient();
 	const [isLoading, setIsLoading] = useState(false);
 	const { toast } = useToast();
 
-	const { data: dailyCheckStatus, isLoading: isChecking } = useQuery({
+	const {
+		data: dailyCheckStatus,
+		isLoading: isChecking,
+		refetch,
+	} = useQuery({
 		queryKey: ["dailyCheckInStatus", userData?.id],
 		queryFn: async () => {
 			const response = await fetch(
@@ -73,8 +78,15 @@ export function DailyCheckInModal() {
 		},
 	});
 
-	const isOpen = dailyCheckStatus?.shouldShowModal;
+	useEffect(() => {
+		refetch();
+	}, [claimMutation.isSuccess, claimMutation.isPending]);
 
+	const isOpen =
+		userData && dailyCheckStatus?.shouldShowModal && pathname === "/home";
+
+	console.log({ isOpen, pathname });
+	
 	return (
 		<Dialog open={isOpen} onOpenChange={() => {}}>
 			<DialogContent>
@@ -88,7 +100,11 @@ export function DailyCheckInModal() {
 					<Button
 						onClick={() => claimMutation.mutate()}
 						disabled={claimMutation.isPending || isChecking}>
-						{claimMutation.isPending ? "Claiming..." : "Claim 5 pOCT"}
+						{claimMutation.isPending
+							? "Claiming..."
+							: claimMutation.isSuccess
+							? "Claimed successfully"
+							: "Claim 5 pOCT"}
 					</Button>
 				</DialogFooter>
 			</DialogContent>
