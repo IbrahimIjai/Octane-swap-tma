@@ -16,7 +16,7 @@ export const useUser = () => {
 	const { toast } = useToast();
 
 	const { push } = useRouter();
-	const telegramId = initData?.user()?.id.toString();
+	const telegramId = initData?.user()?.id.toString() ?? "";
 	const authDate = initData?.authDate;
 
 	const isUserReady = isMounted && initData?.user()?.id ? true : false;

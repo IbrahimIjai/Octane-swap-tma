@@ -26,6 +26,7 @@ export default function Earn() {
 		//fns
 		isStaking,
 		userData,
+		telegramId,
 		isUserLoading,
 		isFetchingUserSuccess,
 		userError,
@@ -122,7 +123,7 @@ export default function Earn() {
 
 		if (status === "NOT_STARTED" || status === "FAILED") {
 			console.log({ task });
-			await startTask(task, userData.telegramId ?? "", userData.id);
+			await startTask(task, telegramId, userData.id);
 			if (task.type.startsWith("TWITTER_") || task.type === "TELEGRAM_JOIN") {
 				const url = getSocialMediaUrl(task);
 				if (url) window.open(url, "_blank");
@@ -133,7 +134,7 @@ export default function Earn() {
 		) {
 			await verifyTask({
 				userId: userData.id,
-				telegramId: userData.telegramId ?? "",
+				telegramId,
 				taskId: task.id,
 			});
 		} else if (status === "COMPLETED") {
