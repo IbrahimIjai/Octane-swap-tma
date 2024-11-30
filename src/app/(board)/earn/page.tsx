@@ -122,7 +122,7 @@ export default function Earn() {
 
 		if (status === "NOT_STARTED" || status === "FAILED") {
 			console.log({ task });
-			await startTask(task, userData.id);
+			await startTask(task, userData.telegramId ?? "", userData.id);
 			if (task.type.startsWith("TWITTER_") || task.type === "TELEGRAM_JOIN") {
 				const url = getSocialMediaUrl(task);
 				if (url) window.open(url, "_blank");
@@ -131,10 +131,18 @@ export default function Earn() {
 			status === "IN_PROGRESS" &&
 			!requiresAdminVerification(task.type)
 		) {
-			await verifyTask({ userId: userData.id, taskId: task.id });
+			await verifyTask({
+				userId: userData.id,
+				telegramId: userData.telegramId ?? "",
+				taskId: task.id,
+			});
 		} else if (status === "COMPLETED") {
 			// Implement claim logic here
-			await claimRewards({ userId: userData.id, taskId: task.id });
+			await claimRewards({
+				userId: userData.id,
+				telegramId: userData.telegramId ?? "",
+				taskId: task.id,
+			});
 			toast({
 				title: "Success",
 				description: "Rewards claimed successfully!",

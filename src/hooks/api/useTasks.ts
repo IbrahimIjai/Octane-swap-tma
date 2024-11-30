@@ -8,6 +8,7 @@ import { JsonValue } from "@prisma/client/runtime/library";
 
 interface TaskData {
 	userId: string;
+	telegramId: string;
 	taskId: string;
 }
 interface TaskError {
@@ -55,7 +56,7 @@ export const useTasks = () => {
 	});
 
 	const verifyTaskMutation = useMutation({
-		mutationFn: async ({ userId, taskId }: TaskData) => {
+		mutationFn: async ({ userId, telegramId, taskId }: TaskData) => {
 			const { data } = await axios.post("/apis/user/tasks/verify", {
 				userId,
 				taskId,
@@ -137,8 +138,16 @@ export const useTasks = () => {
 		].includes(taskType);
 	};
 
-	const handleTaskStart = async (task: Task, userId: string) => {
-		await startTaskMutation.mutateAsync({ userId, taskId: task.id });
+	const handleTaskStart = async (
+		task: Task,
+		telegramId: string,
+		userId: string,
+	) => {
+		await startTaskMutation.mutateAsync({
+			userId,
+			telegramId,
+			taskId: task.id,
+		});
 		const socialUrl = getSocialMediaUrl(task);
 		console.log({ socialUrl });
 		if (socialUrl) {
