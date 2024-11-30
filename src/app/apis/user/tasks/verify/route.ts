@@ -3,7 +3,15 @@ import { prisma } from "@/lib/prisma";
 import { verifyTelegramJoin, verifyTelegramUserBoast } from "@/lib/tg";
 
 export async function POST(req: Request) {
-	const { taskId, userId, telegramId } = await req.json();
+	const { taskId, telegramId, userId } = await req.json();
+	console.log({ taskId, userId, telegramId });
+
+	if (!telegramId) {
+		return NextResponse.json(
+			{ error: "Telegram ID is required" },
+			{ status: 400 },
+		);
+	}
 
 	const task = await prisma.task.findUnique({
 		where: { id: taskId },

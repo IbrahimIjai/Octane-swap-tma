@@ -60,6 +60,7 @@ export const useTasks = () => {
 			const { data } = await axios.post("/apis/user/tasks/verify", {
 				userId,
 				taskId,
+				telegramId,
 			});
 			return data;
 		},
