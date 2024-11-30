@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { verifyTelegramJoin, verifyTelegramUserBoast } from "@/lib/tg";
 
 export async function POST(req: Request) {
-	const { taskId, userId } = await req.json();
+	const { taskId, userId, telegramId } = await req.json();
 
 	const task = await prisma.task.findUnique({
 		where: { id: taskId },
@@ -17,10 +17,10 @@ export async function POST(req: Request) {
 	let isVerified = false;
 	switch (task.type) {
 		case "TELEGRAM_JOIN":
-			isVerified = await verifyTelegramJoin(userId, "octaneswap");
+			isVerified = await verifyTelegramJoin(telegramId, "octaneswap");
 			break;
 		case "BOOST_CHANNEL":
-			const userBoasts = await verifyTelegramUserBoast(userId, taskId);
+			const userBoasts = await verifyTelegramUserBoast(telegramId, taskId);
 			isVerified = userBoasts.length ? true : false;
 			break;
 	}
