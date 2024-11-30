@@ -25,7 +25,7 @@ export async function POST(req: Request) {
 	let isVerified = false;
 	switch (task.type) {
 		case "TELEGRAM_JOIN":
-			isVerified = await verifyTelegramJoin(telegramId, "octaneswap");
+			isVerified = await verifyTelegramJoin(telegramId, "@octaneswap");
 			break;
 		case "BOOST_CHANNEL":
 			const userBoasts = await verifyTelegramUserBoast(telegramId, taskId);
