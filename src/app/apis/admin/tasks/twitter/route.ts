@@ -34,65 +34,86 @@ export async function GET(req: Request) {
 	return NextResponse.json(twitterTasks);
 }
 
-export async function POST(
-	req: Request,
-	{ params }: { params: { taskId: string } },
-) {
-	const { taskId } = params;
-	const { userId, status } = await req.json();
+export async function POST(req: Request) {
+	try {
+		const { userId, taskId, completionStatus, modeVedict } = await req.json();
 
-	if (status !== "COMPLETED" && status !== "FAILED") {
-		return NextResponse.json({ error: "Invalid status" }, { status: 400 });
-	}
+		console.log({ userId, taskId, completionStatus, modeVedict });
 
-	if (status !== "COMPLETED") {
-		await prisma.taskCompletion.update({
-			where: {
-				userId_taskId: {
-					userId: userId,
-					taskId: taskId,
-				},
-			},
-			data: {
-				status: status,
-				completed: new Date(),
-			},
-		});
-	} else if (status !== "FAILED") {
-		await prisma.taskCompletion.update({
-			where: {
-				userId_taskId: {
-					userId: userId,
-					taskId: taskId,
-				},
-			},
-			data: {
-				status: status,
-			},
-		});
-	}
+		if (completionStatus !== "IN_PROGRESS") {
+			return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+		}
 
-	if (status === "COMPLETED") {
 		const task = await prisma.task.findUnique({ where: { id: taskId } });
-		if (task) {
-			await prisma.reward.create({
+
+		if (!task) {
+			return NextResponse.json({ error: "Task not found" }, { status: 400 });
+		}
+
+		if (modeVedict === "FAILED") {
+			await prisma.taskCompletion.update({
+				where: {
+					userId_taskId: {
+						userId: userId,
+						taskId: taskId,
+					},
+				},
 				data: {
-					userId: userId,
-					taskId: taskId,
-					amount: task.points,
-					type: "TASK_COMPLETION",
+					status: modeVedict,
 				},
 			});
-			await prisma.user.update({
-				where: { id: userId },
+		} else if (modeVedict === "COMPLETED") {
+			await prisma.taskCompletion.update({
+				where: {
+					userId_taskId: {
+						userId: userId,
+						taskId: taskId,
+					},
+				},
 				data: {
-					totalRewards: {
-						increment: task.points,
+					status: modeVedict,
+					...(modeVedict === "COMPLETED" ? { completed: new Date() } : {}),
+				},
+			});
+			const reward = await prisma.reward.findUnique({
+				where: {
+					userId_taskId: {
+						userId: userId,
+						taskId: taskId,
 					},
 				},
 			});
-		}
-	}
 
-	return NextResponse.json({ status: 200 });
+			if (!reward) {
+				await prisma.$transaction([
+					prisma.reward.create({
+						data: {
+							userId: userId,
+							taskId: taskId,
+							amount: task.points,
+							type: "TASK_COMPLETION",
+						},
+					}),
+					prisma.user.update({
+						where: { id: userId },
+						data: {
+							totalRewards: {
+								increment: task.points,
+							},
+						},
+					}),
+				]);
+			}
+		}
+
+		console.log("I was here...1 ");
+
+		return NextResponse.json({ status: "success" });
+	} catch (error) {
+		console.error("Error in POST /api/admin/tasks/twitter/[taskId]:", error);
+		return NextResponse.json(
+			{ error: "Internal Server Error" },
+			{ status: 500 },
+		);
+	}
 }

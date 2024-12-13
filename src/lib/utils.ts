@@ -5,6 +5,8 @@ import {
 	MIN_ACCOUNT_AGE_DAYS,
 	TELEGRAM_AGE_POOL,
 } from "./config";
+import { addDays, startOfDay } from "date-fns";
+import { toZonedTime } from "date-fns-tz";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -75,3 +77,17 @@ export const generateReferralLink = (
 ) => {
 	return ` t.me/octaneswapbot/octaneswaptma?start=${referralCode}`;
 };
+
+/**
+ * Utility function to get the start of today in a specific timezone.
+ * @param {string} timeZone - The IANA timezone string (e.g., "Europe/Paris").
+ * @returns {Date} The start of today in the specified timezone.
+ */
+export function getStartOfTodayInTimeZone() {
+	const timeZone = "Europe/Paris";
+	const now = new Date();
+	const zonedNow = toZonedTime(now, timeZone);
+	const startOfToday = startOfDay(zonedNow);
+
+	return startOfToday;
+}

@@ -19,11 +19,18 @@ export async function POST(req: Request) {
 		return NextResponse.json({ error: "Reward not found" }, { status: 404 });
 	}
 
+	const _task = await prisma.task.findUnique({ where: { id: taskId } });
+
+	if (!_task) {
+		return NextResponse.json({ error: "Tak not found" }, { status: 404 });
+	}
 	if (reward.claimed) {
-		return NextResponse.json(
-			{ error: "Reward already claimed" },
-			{ status: 400 },
-		);
+		if (_task.frequency !== "DAILY") {
+			return NextResponse.json(
+				{ error: "Reward already claimed" },
+				{ status: 400 },
+			);
+		}
 	}
 
 	// Update reward status and user balance

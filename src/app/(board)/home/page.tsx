@@ -15,12 +15,13 @@ export default function Home() {
 		//fns
 		isStaking,
 		userData,
+
 		isUserLoading,
 	} = useUser();
 	const [showNotification, setShowNotification] = useState(true);
 
 	return (
-		<div className="relative min-h-screen flex flex-col items-center pb-[120px]">
+		<div className="relative min-h-screen flex flex-col items-center pb-[130px]">
 			<AnimatePresence>{showNotification && <Notifications />}</AnimatePresence>
 			<motion.div
 				layout

@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios, { AxiosError } from "axios";
 import { useToast } from "../use-toast";
 import { Task, TaskCompletion } from "@prisma/client";
@@ -34,6 +34,24 @@ export const useTasks = () => {
 		queryClient.invalidateQueries({ queryKey: ["tasks"] });
 		queryClient.invalidateQueries({ queryKey: ["user"] });
 	};
+
+	//Get fns
+	const {
+		data: allTasks,
+		isLoading: isLoadingTasks,
+		isError: isTasksError,
+	} = useQuery<Task[]>({
+		queryKey: ["tasks"],
+		queryFn: async () => {
+			const res = await axios.get<Task[]>("/apis/admin/tasks");
+			return res.data;
+		},
+	});
+
+	const dailyTasks =
+		allTasks?.filter((task) => task.frequency === "DAILY") || [];
+
+	//Write fn
 	const startTaskMutation = useMutation({
 		mutationFn: async ({ userId, taskId }: TaskData) => {
 			const { data } = await axios.post<TaskCompletion>(
@@ -150,7 +168,6 @@ export const useTasks = () => {
 			taskId: task.id,
 		});
 		const socialUrl = getSocialMediaUrl(task);
-		console.log({ socialUrl });
 		if (socialUrl) {
 			openLink(`${socialUrl}`, {
 				tryBrowser: "chrome",
@@ -159,7 +176,12 @@ export const useTasks = () => {
 		}
 	};
 
+	
 	return {
+		dailyTasks,
+		isLoadingTasks,
+		isTasksError,
+
 		startTask: handleTaskStart,
 		isStarting: startTaskMutation.isPending,
 		startError: startTaskMutation.error,
@@ -181,10 +203,3 @@ export const useTasks = () => {
 	};
 };
 
-// GENERATE a header component with gsap on scrol, the with of the header should be reduced, and the the background colr to change from transparent to white.
-
-// the navbar contains logo, navlinks, sign guest book botton.
-
-// Once scroll, navlinks and sign guestbook should animate out(fade out) and replace buy a menubutton, whch onclick, extends the height of the navbar showing the vetical or column view of the navlinks and sign guestbook buttons.
-
-// I am using nuxt js, typescript and gsap

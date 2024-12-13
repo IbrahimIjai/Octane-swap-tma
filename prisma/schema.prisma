@@ -15,14 +15,15 @@ datasource db {
 }
 
 model User {
-  id              String  @id @default(cuid())
-  isAdmin         Boolean @default(false)
+  id              String     @id @default(cuid())
+  isAdmin         Boolean    @default(false)
+  isModerator     Boolean    @default(false)
   //socials
-  telegramId      String? @unique
-  twitterUsername String? @unique
-  referralCode    String?  @unique
-  referrals  Referral[] @relation("Referrer")
-  referredBy Referral?  @relation("Referred")
+  telegramId      String?    @unique
+  twitterUsername String?    @unique
+  referralCode    String?    @unique
+  referrals       Referral[] @relation("Referrer")
+  referredBy      Referral?  @relation("Referred")
 
   //rewards
 
@@ -34,7 +35,6 @@ model User {
 
   //Points Stakings
   StakingPositions StakingPosition[]
-
 
   //tasks and rewards
   totalRewards    Decimal          @default(0)
@@ -64,7 +64,7 @@ model TaskCompletion {
   task      Task       @relation(fields: [taskId], references: [id])
   taskId    String
   status    TaskStatus @default(NOT_STARTED)
-  completed DateTime   @default(now())
+  completed DateTime?
 
   @@unique([userId, taskId])
 }
@@ -73,7 +73,7 @@ model DailyTaskReset {
   id        String   @id @default(cuid())
   user      User     @relation(fields: [userId], references: [id])
   userId    String   @unique
-  lastReset DateTime 
+  lastReset DateTime
 }
 
 model Referral {
@@ -95,7 +95,7 @@ model Reward {
   task      Task?      @relation(fields: [taskId], references: [id])
   taskId    String?
   type      RewardType
-  claimed   DateTime?  @default(now())
+  claimed   DateTime?
   createdAt DateTime   @default(now())
 
   @@unique([userId, taskId])
@@ -169,7 +169,7 @@ enum TaskType {
   YOUTUBE_WATCH
   TELEGRAM_JOIN
   BOOST_CHANNEL
-  TELEGRAM_sTORY
+  TELEGRAM_STORY
   INVITE
   SHARE_POST
   TRADING

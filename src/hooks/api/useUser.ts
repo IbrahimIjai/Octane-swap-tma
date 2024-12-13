@@ -40,6 +40,9 @@ export const useUser = () => {
 		enabled: isUserReady,
 	});
 
+	const isUserAdmin = userData?.isAdmin;
+	const isModerator = userData?.isModerator;
+
 	// UTILS
 	const getActiveStakingPools = () => {
 		const now = new Date();
@@ -198,6 +201,8 @@ export const useUser = () => {
 		authDate,
 		isBot,
 		telegramId,
+		isUserAdmin,
+		isModerator,
 
 		//creating user
 		createUser,
@@ -235,4 +240,5 @@ export const useUser = () => {
 		getReferralLink,
 		isGettingReferralLink: getReferralLinkMutation.isPending,
 	};
+	
 };

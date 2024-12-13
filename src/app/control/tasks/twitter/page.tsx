@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, CheckCircle, XCircle, Filter } from "lucide-react";
+import { ExternalLink, CheckCircle, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
 	Select,
@@ -23,38 +23,34 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { useTasks } from "@/hooks/api/useTasks";
+import { Task, TaskCompletion, TaskStatus, TaskType } from "@prisma/client";
 
-interface TwitterTask {
-	id: string;
-	title: string;
-	points: number;
-	type: "TWITTER_FOLLOW" | "TWITTER_QUOTE_RETWEET";
-	actionData: { username?: string; tweetId?: string };
-	completions: {
-		id: string;
-		status: "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED" | "FAILED";
+type ExtendedTask = Task & {
+	completions: (TaskCompletion & {
 		user: {
 			id: string;
-			twitterUsername: string;
+			twitterUsername: string | null;
 		};
-	}[];
-}
+	})[];
+};
+
+type FilterType = "ALL" | TaskType;
 
 export default function AdminTwitterTasks() {
+	const { getSocialMediaUrl } = useTasks();
 	const { toast } = useToast();
 	const queryClient = useQueryClient();
-	const [filter, setFilter] = useState<
-		"ALL" | "TWITTER_FOLLOW" | "TWITTER_QUOTE_RETWEET"
-	>("ALL");
+	const [filter, setFilter] = useState<FilterType>("ALL");
 
 	const {
 		data: tasks,
 		isLoading,
 		isError,
-	} = useQuery<TwitterTask[]>({
+	} = useQuery<ExtendedTask[]>({
 		queryKey: ["adminTwitterTasks", filter],
 		queryFn: async () => {
-			const res = await axios.get(`/api/admin/tasks/twitter?filter=${filter}`);
+			const res = await axios.get(`/apis/admin/tasks/twitter?filter=${filter}`);
 			return res.data;
 		},
 	});
@@ -63,27 +59,34 @@ export default function AdminTwitterTasks() {
 		mutationFn: ({
 			taskId,
 			userId,
-			status,
+			completionStatus,
+			modeVedict,
 		}: {
 			taskId: string;
 			userId: string;
-			status: "COMPLETED" | "FAILED";
+			completionStatus: TaskStatus;
+			modeVedict: TaskStatus;
 		}) =>
-			axios.post(`/api/admin/tasks/twitter/${taskId}`, {
+			axios.post(`/apis/admin/tasks/twitter`, {
+				taskId,
 				userId,
-				status,
+				completionStatus,
+				modeVedict,
 			}),
 		onSuccess: () => {
-			// queryClient.invalidateQueries(["adminTwitterTasks"]);
+			queryClient.invalidateQueries({ queryKey: ["adminTwitterTasks"] });
 			toast({
 				title: "Task Updated",
 				description: "The task status has been updated successfully.",
 			});
 		},
-		onError: () => {
+		onError: (error: any) => {
+			console.error("Error in verifyMutation:", error);
 			toast({
 				title: "Error",
-				description: "Failed to update task status. Please try again.",
+				description:
+					error.response?.data?.error ||
+					"Failed to update task status. Please try again.",
 				variant: "destructive",
 			});
 		},
@@ -102,10 +105,7 @@ export default function AdminTwitterTasks() {
 					<CardTitle className="text-2xl font-semibold">
 						Admin Twitter Tasks
 					</CardTitle>
-					<Select
-						onValueChange={(
-							value: "ALL" | "TWITTER_FOLLOW" | "TWITTER_QUOTE_RETWEET",
-						) => setFilter(value)}>
+					<Select onValueChange={(value: FilterType) => setFilter(value)}>
 						<SelectTrigger className="w-[180px]">
 							<SelectValue placeholder="Filter tasks" />
 						</SelectTrigger>
@@ -125,77 +125,81 @@ export default function AdminTwitterTasks() {
 						<TableRow>
 							<TableHead>Task</TableHead>
 							<TableHead>Type</TableHead>
-							<TableHead>Points</TableHead>
-							<TableHead>User</TableHead>
-							<TableHead>Status</TableHead>
+							<TableHead className="hidden lg:inline-flex">Points</TableHead>
+							<TableHead className="hidden lg:inline-flex"> User</TableHead>
+							<TableHead className="hidden lg:inline-flex">Status</TableHead>
 							<TableHead>Actions</TableHead>
 						</TableRow>
 					</TableHeader>
 					<TableBody>
 						{filteredTasks?.flatMap((task) =>
-							task.completions.map((completion) => (
-								<TableRow key={`${task.id}-${completion.id}`}>
-									<TableCell>{task.title}</TableCell>
-									<TableCell>{task.type}</TableCell>
-									<TableCell>{task.points}</TableCell>
-									<TableCell>{completion.user.twitterUsername}</TableCell>
-									<TableCell>
-										<Badge
-											variant={
-												completion.status === "COMPLETED"
-													? "default"
-													: "secondary"
-											}>
-											{completion.status}
-										</Badge>
-									</TableCell>
-									<TableCell>
-										<div className="flex space-x-2">
-											<Button
-												size="sm"
-												variant="outline"
-												onClick={() => {
-													const url =
-														task.type === "TWITTER_FOLLOW"
-															? `https://twitter.com/${task.actionData.username}`
-															: `https://twitter.com/${completion.user.twitterUsername}/status/${task.actionData.tweetId}`;
-													window.open(url, "_blank");
-												}}>
-												<ExternalLink className="w-4 h-4 mr-2" />
-												Check
-											</Button>
-											<Button
-												size="sm"
-												variant="default"
-												onClick={() =>
-													verifyMutation.mutate({
-														taskId: task.id,
-														userId: completion.user.id,
-														status: "COMPLETED",
-													})
-												}
-												disabled={completion.status === "COMPLETED"}>
-												<CheckCircle className="w-4 h-4 mr-2" />
-												Verify
-											</Button>
-											<Button
-												size="sm"
-												variant="destructive"
-												onClick={() =>
-													verifyMutation.mutate({
-														taskId: task.id,
-														userId: completion.user.id,
-														status: "FAILED",
-													})
-												}
-												disabled={completion.status === "FAILED"}>
-												<XCircle className="w-4 h-4 mr-2" />
-												Fail
-											</Button>
-										</div>
-									</TableCell>
-								</TableRow>
-							)),
+							task.completions
+								.filter((completn) => completn.status === "IN_PROGRESS")
+								.map((completion) => (
+									<TableRow key={`${task.id}-${completion.id}`}>
+										<TableCell>{task.title}</TableCell>
+										<TableCell>{task.type}</TableCell>
+										<TableCell className="hidden lg:inline-flex">
+											{task.points.toString()}
+										</TableCell>
+										<TableCell className="hidden lg:inline-flex">
+											{completion.user.twitterUsername}
+										</TableCell>
+										<TableCell className="hidden lg:inline-flex">
+											<Badge
+												variant={
+													completion.status === "COMPLETED"
+														? "default"
+														: "secondary"
+												}>
+												{completion.status}
+											</Badge>
+										</TableCell>
+										<TableCell>
+											<div className="flex space-x-2">
+												<Button
+													size="sm"
+													variant="outline"
+													onClick={() => {
+														const url = getSocialMediaUrl(task);
+														if (url) window.open(url, "_blank");
+													}}>
+													<ExternalLink className="w-4 h-4 mr-2" />
+													Check
+												</Button>
+												<Button
+													size="sm"
+													variant="default"
+													onClick={() =>
+														verifyMutation.mutate({
+															taskId: task.id,
+															userId: completion.user.id,
+															completionStatus: completion.status,
+															modeVedict: "COMPLETED",
+														})
+													}
+													disabled={completion.status === "COMPLETED"}>
+													<CheckCircle className="w-4 h-4 mr-2" />
+													Verify
+												</Button>
+												<Button
+													size="sm"
+													variant="destructive"
+													onClick={() =>
+														verifyMutation.mutate({
+															taskId: task.id,
+															userId: completion.user.id,
+															completionStatus: completion.status,
+															modeVedict: "FAILED",
+														})
+													}>
+													<XCircle className="w-4 h-4 mr-2" />
+													Fail
+												</Button>
+											</div>
+										</TableCell>
+									</TableRow>
+								)),
 						)}
 					</TableBody>
 				</Table>
