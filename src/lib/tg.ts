@@ -1,4 +1,7 @@
-import { UserChatBoosts } from "node_modules/telegraf/typings/core/types/typegram";
+import {
+	UserChatBoosts,
+	UserProfilePhotos,
+} from "node_modules/telegraf/typings/core/types/typegram";
 import { Telegram } from "telegraf";
 
 const bot = new Telegram(process.env.NEXT_PUBLIC_TG_BOT_API_TOKEN!);
@@ -13,6 +16,18 @@ export async function verifyTelegramJoin(
 	} catch (error) {
 		console.error("Error verifying Telegram join:", error);
 		return false;
+	}
+}
+
+export async function getProfileImage(
+	userId: number,
+): Promise<UserProfilePhotos | null> {
+	try {
+		const profilePhotos = await bot.getUserProfilePhotos(userId);
+		return profilePhotos;
+	} catch (error) {
+		console.error("Error verifying Telegram join:", error);
+		return null;
 	}
 }
 

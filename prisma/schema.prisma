@@ -22,6 +22,7 @@ model User {
   telegramId      String?    @unique
   twitterUsername String?    @unique
   referralCode    String?    @unique
+  secretCode      String?    @unique
   referrals       Referral[] @relation("Referrer")
   referredBy      Referral?  @relation("Referred")
 

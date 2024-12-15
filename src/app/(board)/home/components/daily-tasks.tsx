@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import {  LoaderCircle, Trophy } from "lucide-react";
+import { LoaderCircle, Trophy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { Task, TaskCompletion } from "@prisma/client";
@@ -20,7 +20,6 @@ const DailyTasks = ({
 	userData: LocalUser | undefined;
 	isUserLoading: boolean;
 }) => {
-
 	const {
 		dailyTasks,
 		isLoadingTasks,
@@ -42,10 +41,8 @@ const DailyTasks = ({
 
 	const taskCompletions = userData?.TaskCompletions;
 
-
 	const totalPoints =
 		dailyTasks?.reduce((sum, task) => sum + Number(task.points), 0) || 0;
-
 
 	const earnedPoints =
 		taskCompletions
@@ -59,7 +56,6 @@ const DailyTasks = ({
 
 	const progressPercentage = (earnedPoints / totalPoints) * 100;
 
-	
 	return (
 		<Card className="w-full max-w-2xl mx-auto mt-8">
 			<CardHeader>
@@ -94,6 +90,7 @@ interface TaskRowProps {
 }
 
 const TaskRow = ({ task, userData }: TaskRowProps) => {
+
 	const {
 		startTask,
 		isStarting,
@@ -107,7 +104,9 @@ const TaskRow = ({ task, userData }: TaskRowProps) => {
 		requiresAdminVerification,
 		getSocialMediaUrl,
 	} = useTasks();
+
 	const { toast } = useToast();
+	
 	const queryClient = useQueryClient();
 
 	const getTaskStatus = (taskId: string): TaskCompletion["status"] => {
@@ -123,6 +122,7 @@ const TaskRow = ({ task, userData }: TaskRowProps) => {
 		const _task = taskCompletions?.find((task) => task.taskId === taskId);
 		return _task && _task?.completed;
 	};
+
 	const isClaimed = (taskId: string) => {
 		return userData?.Rewards.find((reward) => reward.taskId === taskId)
 			?.claimed;
@@ -188,8 +188,6 @@ const TaskRow = ({ task, userData }: TaskRowProps) => {
 		}
 	};
 
-	
-
 	const getButtonText = (task: Task) => {
 		const status = getTaskStatus(task.id);
 		switch (status) {
@@ -203,7 +201,7 @@ const TaskRow = ({ task, userData }: TaskRowProps) => {
 					: "Verify";
 			case "COMPLETED":
 				return userData?.Rewards.find((r) => r.taskId === task.id)?.claimed
-					? "Claimed" 
+					? "Claimed"
 					: "Claim";
 			default:
 				return "Start";

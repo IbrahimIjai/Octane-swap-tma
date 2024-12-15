@@ -131,6 +131,9 @@ importers:
       react:
         specifier: ^18
         version: 18.3.1
+      react-copy-to-clipboard:
+        specifier: ^5.1.0
+        version: 5.1.0(react@18.3.1)
       react-day-picker:
         specifier: 8.10.1
         version: 8.10.1(date-fns@4.1.0)(react@18.3.1)
@@ -168,6 +171,9 @@ importers:
       '@types/react':
         specifier: ^18
         version: 18.3.11
+      '@types/react-copy-to-clipboard':
+        specifier: ^5.0.7
+        version: 5.0.7
       '@types/react-dom':
         specifier: ^18
         version: 18.3.0
@@ -2805,6 +2811,9 @@ packages:
 
   '@types/prop-types@15.7.13':
     resolution: {integrity: sha512-hCZTSvwbzWGvhqxp/RqVqwU999pBf2vp7hzIjiYOsl8wqOmUxkQ6ddw1cV3l8811+kdUFus/q4d1Y3E3SyEifA==}
+
+  '@types/react-copy-to-clipboard@5.0.7':
+    resolution: {integrity: sha512-Gft19D+as4M+9Whq1oglhmK49vqPhcLzk8WfvfLvaYMIPYanyfLy0+CwFucMJfdKoSFyySPmkkWn8/E6voQXjQ==}
 
   '@types/react-dom@18.3.0':
     resolution: {integrity: sha512-EhwApuTmMBmXuFOikhQLIBUn6uFg81SwLMOAUgodJF14SOBOCMdU04gDoYi0WOJJHD144TL32z4yDqCW3dnkQg==}
@@ -5855,6 +5864,11 @@ packages:
   range-parser@1.2.1:
     resolution: {integrity: sha512-Hrgsx+orqoygnmhFbKaHE6c296J+HTAQXoxEF6gNupROmmGJRoyzfG3ccAveqCBrwr/2yxQ5BVd/GTl5agOwSg==}
     engines: {node: '>= 0.6'}
+
+  react-copy-to-clipboard@5.1.0:
+    resolution: {integrity: sha512-k61RsNgAayIJNoy9yDsYzDe/yAZAzEbEgcz3DZMhF686LEyukcE1hzurxe85JandPUG+yTfGVFzuEw3xt8WP/A==}
+    peerDependencies:
+      react: ^15.3.0 || 16 || 17 || 18
 
   react-day-picker@8.10.1:
     resolution: {integrity: sha512-TMx7fNbhLk15eqcMt+7Z7S2KF7mfTId/XJDjKE8f+IUcFn0l08/kI4FiYTL/0yuOLmEcbR4Fwe3GJf/NiiMnPA==}
@@ -10236,6 +10250,10 @@ snapshots:
       undici-types: 6.19.8
 
   '@types/prop-types@15.7.13': {}
+
+  '@types/react-copy-to-clipboard@5.0.7':
+    dependencies:
+      '@types/react': 18.3.11
 
   '@types/react-dom@18.3.0':
     dependencies:
@@ -14678,6 +14696,12 @@ snapshots:
   ramda@0.30.1: {}
 
   range-parser@1.2.1: {}
+
+  react-copy-to-clipboard@5.1.0(react@18.3.1):
+    dependencies:
+      copy-to-clipboard: 3.3.3
+      prop-types: 15.8.1
+      react: 18.3.1
 
   react-day-picker@8.10.1(date-fns@4.1.0)(react@18.3.1):
     dependencies:

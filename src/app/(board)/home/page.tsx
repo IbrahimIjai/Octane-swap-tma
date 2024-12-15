@@ -9,6 +9,7 @@ import { useUser } from "@/hooks/api/useUser";
 import Notifications from "@/components/notifications";
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
+import Header from "@/components/layout/header";
 
 export default function Home() {
 	const {
@@ -23,6 +24,7 @@ export default function Home() {
 	return (
 		<div className="relative min-h-screen flex flex-col items-center pb-[130px]">
 			<AnimatePresence>{showNotification && <Notifications />}</AnimatePresence>
+			<Header />
 			<motion.div
 				layout
 				transition={{ duration: 0.3, ease: "easeInOut" }}
