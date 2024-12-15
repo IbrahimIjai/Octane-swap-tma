@@ -43,6 +43,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import axios from "axios";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Separator } from "../ui/separator";
+import { getProfileImage } from "@/lib/tg";
+import { UserProfilePhotos } from "node_modules/telegraf/typings/core/types/typegram";
 
 interface HeaderProps {
 	className?: string;
@@ -53,6 +55,22 @@ const Header: React.FC<HeaderProps> = ({ className = "" }) => {
 	const username = initData?.user()?.username;
 	const displayName = username || userId || "User";
 	const { profilePhoto, isLoading: isPhotoLoading } = useProfilePhoto(userId);
+	console.log({ profilePhoto, isPhotoLoading });
+	const [pfp, setPfp] = useState<UserProfilePhotos | null>(null);
+
+	useEffect(() => {
+		const fetchPfp = async () => {
+			if (!userId) {
+				return;
+			}
+			const profileImage = await getProfileImage(Number(userId));
+			profileImage && setPfp(profileImage);
+
+			console.log({ pfp });
+		};
+		fetchPfp();
+	}, [userId, pfp]);
+
 	return (
 		<header
 			className={`w-full py-1 px-2 my-3 flex justify-between gap-6 rounded-lg border mb-6 items-center bg-background ${className}`}>
