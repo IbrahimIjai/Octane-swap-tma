@@ -30,7 +30,7 @@ export default function NavigationButton() {
 	const pathname = usePathname();
 	const { push } = useRouter();
 	return (
-		<div className="w-full fixed bottom-0 inset-x-0 py-3 px-2 border-t flex items-center justify-evenly bg-background h-[80px]">
+		<div className="w-full fixed bottom-0 inset-x-0 py-3 px-2 border-t flex items-center justify-center gap-2 bg-background h-[80px]">
 			{navItems.map((item) => {
 				const Icon = getIcon(item.icon);
 				const isActive = pathname === item.href;

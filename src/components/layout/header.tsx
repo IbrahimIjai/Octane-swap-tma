@@ -103,11 +103,8 @@ export default Header;
 const secretPhraseSchema = z.object({
 	secretCode: z
 		.string()
-		.min(8, "Secret phrase must be at least 8 characters long")
-		.regex(
-			/^(?=.*[a-zA-Z])(?=.*\d)(?=.*[*#@])/,
-			"Must include letters, numbers, and symbols (*#@)",
-		),
+		.min(5, "Secret phrase must be at least 5 characters long")
+		.regex(/^[a-z]+$/, "Must include only lowercase letters"),
 });
 
 type SecretPhraseFormData = z.infer<typeof secretPhraseSchema>;
@@ -133,12 +130,10 @@ function SecretPhraseModal({ children }: { children?: ReactNode }) {
 	const secretPhrase = watch("secretCode");
 
 	const calculateStrength = (phrase: string) => {
-		let score = 0;
-		if (phrase.length >= 8) score += 25;
-		if (phrase.match(/[a-z]/) && phrase.match(/[A-Z]/)) score += 25;
-		if (phrase.match(/\d/)) score += 25;
-		if (phrase.match(/[*#@]/)) score += 25;
-		return score;
+		if (phrase.length >= 7) return 100;
+		if (phrase.length === 6) return 70;
+		if (phrase.length === 5) return 50;
+		return 0;
 	};
 
 	const mutation = useMutation({
@@ -320,6 +315,11 @@ function SecretPhraseModal({ children }: { children?: ReactNode }) {
 												type={showSecretCode ? "text" : "password"}
 												{...register("secretCode")}
 											/>
+											{errors.secretCode && (
+												<p className="text-sm text-destructive">
+													{errors.secretCode.message}
+												</p>
+											)}
 											<Button
 												variant="outline"
 												className="absolute inset-y-0 right-2 flex items-center"
@@ -352,20 +352,12 @@ function SecretPhraseModal({ children }: { children?: ReactNode }) {
 										<Label>Requirements</Label>
 										<ul className="text-sm space-y-1">
 											<RequirementItem
-												met={secretPhrase?.length >= 8}
-												text="At least 8 characters"
+												met={secretPhrase?.length >= 5}
+												text="At least 5 characters"
 											/>
 											<RequirementItem
-												met={!!secretPhrase?.match(/[a-zA-Z]/)}
-												text="Includes letters"
-											/>
-											<RequirementItem
-												met={!!secretPhrase?.match(/\d/)}
-												text="Includes numbers"
-											/>
-											<RequirementItem
-												met={!!secretPhrase?.match(/[*#@]/)}
-												text="Includes symbols (*#@)"
+												met={!!secretPhrase?.match(/^[a-z]+$/)}
+												text="Only lowercase letters"
 											/>
 										</ul>
 									</div>
@@ -376,7 +368,9 @@ function SecretPhraseModal({ children }: { children?: ReactNode }) {
 											onClick={() => setIsUpdating(false)}>
 											Cancel
 										</Button>
-										<Button type="submit">Save Secret Phrase</Button>
+										<Button type="submit">
+											{mutation.isPending ? "Submitting" : "Save Secret Phrase"}
+										</Button>
 									</div>
 								</form>
 							</motion.div>

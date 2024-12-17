@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,8 @@ import { Task, TaskCompletion } from "@prisma/client";
 import { LocalUser } from "@/utils/types";
 import { shareStory } from "@telegram-apps/sdk-react";
 import { useTasks } from "@/hooks/api/useTasks";
+import { getStartOfTodayInTimeZone } from "@/lib/utils";
+import { addDays, differenceInSeconds, isAfter } from "date-fns";
 
 const DailyTasks = ({
 	userData,
@@ -90,6 +92,7 @@ interface TaskRowProps {
 }
 
 const TaskRow = ({ task, userData }: TaskRowProps) => {
+	const [countdown, setCountdown] = useState<string | null>(null);
 
 	const {
 		startTask,
@@ -100,20 +103,29 @@ const TaskRow = ({ task, userData }: TaskRowProps) => {
 
 		claimRewards,
 		isClaiming,
-
+		
 		requiresAdminVerification,
 		getSocialMediaUrl,
 	} = useTasks();
 
 	const { toast } = useToast();
-	
+
 	const queryClient = useQueryClient();
 
 	const getTaskStatus = (taskId: string): TaskCompletion["status"] => {
 		const completion = userData?.TaskCompletions?.find(
 			(c) => c.taskId === taskId,
 		);
-		return completion?.status || "NOT_STARTED";
+		if (!completion) return "NOT_STARTED";
+
+		const startOfToday = getStartOfTodayInTimeZone();
+		const completionDate = new Date(completion.completed || 0);
+
+		if (isAfter(completionDate, startOfToday)) {
+			return completion.status;
+		}
+
+		return "NOT_STARTED";
 	};
 
 	const taskCompletions = userData?.TaskCompletions;
@@ -208,6 +220,44 @@ const TaskRow = ({ task, userData }: TaskRowProps) => {
 		}
 	};
 
+	const isTaskCompletedToday = (taskId: string) => {
+		const completion = userData?.TaskCompletions?.find(
+			(task) => task.taskId === taskId,
+		);
+		if (!completion || !completion.completed) return false;
+
+		const completionDate = new Date(completion.completed);
+		const startOfToday = getStartOfTodayInTimeZone();
+
+		return isAfter(completionDate, startOfToday);
+	};
+
+	useEffect(() => {
+		if (isTaskCompletedToday(task.id) && isClaimed(task.id)) {
+			const interval = setInterval(() => {
+				const startOfToday = getStartOfTodayInTimeZone();
+				const nextClaimTime = addDays(startOfToday, 1);
+				nextClaimTime.setHours(12);
+				nextClaimTime.setMinutes(1);
+				nextClaimTime.setSeconds(0);
+
+				const secondsLeft = differenceInSeconds(nextClaimTime, new Date());
+
+				if (secondsLeft <= 0) {
+					setCountdown(null);
+					clearInterval(interval);
+				} else {
+					const hours = Math.floor(secondsLeft / 3600);
+					const minutes = Math.floor((secondsLeft % 3600) / 60);
+					const seconds = secondsLeft % 60;
+					setCountdown(`${hours}h ${minutes}m ${seconds}s`);
+				}
+			}, 1000);
+
+			return () => clearInterval(interval);
+		}
+	}, [task.id, isTaskCompletedToday, isClaimed]);
+
 	const trxLoading = isClaiming || isStarting || isVerifying;
 
 	return (
@@ -224,7 +274,13 @@ const TaskRow = ({ task, userData }: TaskRowProps) => {
 					</Badge>
 				</div>
 				<Button
-					disabled={isClaimed(task.id) ? true : false}
+					disabled={
+						!!(
+							isTaskCompletedToday(task.id) &&
+							isClaimed(task.id) &&
+							!countdown
+						)
+					}
 					onClick={() => handleTaskAction(task)}>
 					{trxLoading && <LoaderCircle className="w-3 h-3 animate-spin mr-2" />}
 					{getButtonText(task)}

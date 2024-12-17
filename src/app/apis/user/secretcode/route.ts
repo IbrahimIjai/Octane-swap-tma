@@ -4,12 +4,10 @@ import { prisma } from "@/lib/prisma";
 export async function POST(req: Request) {
 	try {
 		const { secretCode, userId } = await req.json();
-		
 
-		const user = await prisma.user.upsert({
+		const user = await prisma.user.update({
 			where: { id: userId },
-			update: { secretCode },
-			create: { id: userId, secretCode },
+			data: { secretCode },
 		});
 
 		if (!user) {

@@ -93,7 +93,11 @@ export const useUser = () => {
 	//MUTATIONS
 
 	const createUserMutation = useMutation({
-		mutationFn: async (data: { telegramId: string; referralCode?: string }) => {
+		mutationFn: async (data: {
+			telegramId: string;
+			telegramUsername: string;
+			referralCode?: string;
+		}) => {
 			const response = await axios.post<User>("/apis/user", data);
 			return response.data;
 		},
@@ -164,11 +168,14 @@ export const useUser = () => {
 			throw new Error("User not ready");
 		}
 		const referralCode = initData?.startParam();
+		const userName = initData?.user()?.username??"";
+
 		if (sendData.isAvailable()) {
 			sendData("my-data-goes-here");
 		}
 		return createUserMutation.mutateAsync({
 			telegramId: telegramId!,
+			telegramUsername: userName,
 			referralCode,
 		});
 	};
@@ -240,5 +247,4 @@ export const useUser = () => {
 		getReferralLink,
 		isGettingReferralLink: getReferralLinkMutation.isPending,
 	};
-	
 };

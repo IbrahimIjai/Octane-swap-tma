@@ -60,9 +60,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
 	try {
 		const body = await req.json();
-		const { telegramId, referralCode } = body;
+		const { telegramId, telegramUsername, referralCode } = body;
 
-		if (!telegramId) {
+		if (!telegramId || !telegramUsername) {
 			return NextResponse.json(
 				{ error: "Missing required fields" },
 				{ status: 400 },
@@ -81,9 +81,10 @@ export async function POST(req: NextRequest) {
 			const newUser = await tx.user.create({
 				data: {
 					telegramId,
+					telegramUsername,
 				},
 			});
-			
+
 			if (referrer) {
 				console.log({ referrerCode: referrer.referralCode });
 				await tx.referral.create({

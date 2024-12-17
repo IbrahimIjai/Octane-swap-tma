@@ -1,4 +1,5 @@
 import {
+	ChatMember,
 	UserChatBoosts,
 	UserProfilePhotos,
 } from "node_modules/telegraf/typings/core/types/typegram";
@@ -31,6 +32,15 @@ export async function getProfileImage(
 	}
 }
 
+// export async function getUserNames(userId: number): Promise<ChatMember | null> {
+// 	try {
+// 		const user = await bot.getCh("@octaneswaps", userId);
+// 		return user;
+// 	} catch (error) {
+// 		console.error("Error verifying Telegram join:", error);
+// 		return null;
+// 	}
+// }
 export async function verifyTelegramUserBoast(
 	userId: number,
 	groupId: string,

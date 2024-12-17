@@ -5,6 +5,7 @@ import { Task, TaskCompletion } from "@prisma/client";
 import { openLink } from "@telegram-apps/sdk-react";
 import { ActionData } from "@/lib/types";
 import { JsonValue } from "@prisma/client/runtime/library";
+import { useEffect } from "react";
 
 interface TaskData {
 	userId: string;
@@ -40,6 +41,7 @@ export const useTasks = () => {
 		data: allTasks,
 		isLoading: isLoadingTasks,
 		isError: isTasksError,
+		refetch: refetchTasks,
 	} = useQuery<Task[]>({
 		queryKey: ["tasks"],
 		queryFn: async () => {
@@ -176,6 +178,13 @@ export const useTasks = () => {
 		}
 	};
 
+	useEffect(() => {
+		refetchTasks();
+	}, [
+		startTaskMutation.isSuccess,
+		verifyTaskMutation.isSuccess,
+		claimTaskMutation.isSuccess,
+	]);
 	
 	return {
 		dailyTasks,
@@ -202,4 +211,3 @@ export const useTasks = () => {
 		resetVerifyTask: verifyTaskMutation.reset,
 	};
 };
-

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import OctaneSwapLogo from "@/components/logo";
 import { Button } from "@/components/ui/button";
@@ -11,11 +11,21 @@ import { useUser } from "@/hooks/api/useUser";
 import { useRouter } from "next/navigation";
 import PageLoadingUi from "@/components/loaders/page-loading";
 import { useToast } from "@/hooks/use-toast";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function OnboardingPage() {
 	const { push } = useRouter();
 	const { toast } = useToast();
-	const [step, setStep] = useState<"welcome" | "created" | "login">("welcome");
+	const [step, setStep] = useState<
+		"welcome" | "created" | "set-username" | "login"
+	>("welcome");
+	const [isUsernameDialogOpen, setIsUsernameDialogOpen] = useState(false);
 
 	const {
 		isUserReady,
@@ -47,9 +57,23 @@ export default function OnboardingPage() {
 			});
 		}
 	};
+	useEffect(() => {
+		if (isUserReady && !initData.user()?.username) {
+			setStep("set-username");
+			setIsUsernameDialogOpen(true);
+		}
+	}, [isUserReady]);
+
+	const handleSetUsername = () => {
+		// Open Telegram app to settings
+		window.open("tg://settings", "_blank");
+	};
 
 	const handleProceedToHome = () => {
 		push("/home");
+	};
+	const handleRetryUsernameCheck = () => {
+		window.location.reload();
 	};
 
 	if (isUserLoading || !isUserReady) {
@@ -94,7 +118,7 @@ export default function OnboardingPage() {
 									initial={{ opacity: 0, y: -20 }}
 									animate={{ opacity: 1, y: 0 }}
 									transition={{ duration: 0.5, delay: 0.5 }}
-									className="text-2xl font-bold mb-4">
+									className="text-2xl font-bold mb-4 text-center">
 									Welcome back {initData?.user()?.firstName}
 								</motion.h2>
 							) : (
@@ -102,7 +126,7 @@ export default function OnboardingPage() {
 									initial={{ opacity: 0, y: -20 }}
 									animate={{ opacity: 1, y: 0 }}
 									transition={{ duration: 0.5, delay: 0.5 }}
-									className="text-2xl font-bold mb-4">
+									className="text-2xl font-bold mb-4  items-center">
 									Welcome to OctaneSwap {initData?.user()?.firstName}
 								</motion.h2>
 							)}
@@ -162,6 +186,40 @@ export default function OnboardingPage() {
 					</Card>
 				</motion.div>
 			</motion.div>
+			<Dialog
+				open={isUsernameDialogOpen}
+				onOpenChange={setIsUsernameDialogOpen}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Set Your Telegram Username</DialogTitle>
+						<DialogDescription>
+							To use OctaneSwap, you need to set a username for your Telegram
+							account. This helps us identify you and ensures a smooth
+							experience.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="flex flex-col space-y-4">
+						<p>Follow these steps to set your username:</p>
+						<ol className="list-decimal list-inside space-y-2">
+							<li>Open your Telegram app</li>
+							<li>Go to Settings</li>
+							<li>Tap on &quot;Username&quot; and set a unique username</li>
+							<li>
+								Return to OctaneSwap and click &quot;I&apos;ve set my
+								username&quot;
+							</li>
+						</ol>
+						<div className="flex justify-between">
+							<Button onClick={handleSetUsername}>
+								Open Telegram Settings
+							</Button>
+							<Button onClick={handleRetryUsernameCheck}>
+								I&apos;ve set my username
+							</Button>
+						</div>
+					</div>
+				</DialogContent>
+			</Dialog>
 		</AnimatePresence>
 	);
 }

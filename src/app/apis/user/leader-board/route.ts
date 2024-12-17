@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
 			prisma.$queryRaw<LeaderboardEntry[]>`
         SELECT 
           id, 
-          "telegramId" as username, 
+          "telegramUsername" as username, 
           "totalRewards" as score, 
           RANK () OVER (ORDER BY "totalRewards" DESC) as rank
         FROM "User"
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
 			prisma.$queryRaw<LeaderboardEntry[]>`
         SELECT 
           id, 
-          "telegramId" as username, 
+          "telegramUsername" as username, 
           "totalRewards" as score, 
           DENSE_RANK() OVER (ORDER BY "totalRewards" DESC) as rank
         FROM "User"
@@ -42,6 +42,8 @@ export async function GET(req: NextRequest) {
         LIMIT 100
       `,
 		]);
+
+		console.log({ userRank, topUsers });
 
 		const _userRank = userRank.map((entry, i) => ({
 			...entry,
@@ -51,8 +53,9 @@ export async function GET(req: NextRequest) {
 		const _topUsers = topUsers.map((entry, i) => ({
 			...entry,
 			// rank: Number(entry.rank), // Convert BigInt to Number
-			rank: i+1,
+			rank: i + 1,
 		}));
+		
 		console.log({ _userRank, _topUsers });
 
 		if (_userRank.length === 0) {

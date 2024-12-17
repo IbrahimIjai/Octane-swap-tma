@@ -15,16 +15,20 @@ datasource db {
 }
 
 model User {
-  id              String     @id @default(cuid())
-  isAdmin         Boolean    @default(false)
-  isModerator     Boolean    @default(false)
+  id               String  @id @default(cuid())
+  isAdmin          Boolean @default(false)
+  isModerator      Boolean @default(false)
   //socials
-  telegramId      String?    @unique
-  twitterUsername String?    @unique
-  referralCode    String?    @unique
-  secretCode      String?    @unique
-  referrals       Referral[] @relation("Referrer")
-  referredBy      Referral?  @relation("Referred")
+  telegramUsername String  @unique
+  telegramId       String? @unique
+
+  twitterUid      String? @unique
+  twitterUsername String? @unique
+
+  referralCode String?    @unique
+  secretCode   String?    @unique
+  referrals    Referral[] @relation("Referrer")
+  referredBy   Referral?  @relation("Referred")
 
   //rewards
 
@@ -42,6 +46,8 @@ model User {
   TaskCompletions TaskCompletion[]
   DailyTaskReset  DailyTaskReset?
   Rewards         Reward[]
+
+  @@index([totalRewards(sort: Desc), createdAt(sort: Asc)])
 }
 
 model Task {

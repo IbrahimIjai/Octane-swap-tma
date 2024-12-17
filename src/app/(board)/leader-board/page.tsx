@@ -8,6 +8,8 @@ import { Trophy } from "lucide-react";
 import { useUser } from "@/hooks/api/useUser";
 import axios from "axios";
 import LeaderboardCard from "./components/leaderboard-card";
+import { User } from "@prisma/client";
+import Header from "@/components/layout/header";
 
 type LeaderboardEntry = {
 	id: string;
@@ -19,13 +21,13 @@ type LeaderboardEntry = {
 };
 
 type LeaderboardData = {
-	currentUser: LeaderboardEntry;
-	topUsers: LeaderboardEntry[];
+	count: string;
+	topUsers: User[];
 };
 
 async function fetchLeaderboard(userId: string): Promise<LeaderboardData> {
 	const response = await axios.get<LeaderboardData>(
-		`/apis/user/leader-board?userId=${userId}`,
+		`/apis/user/leader-board/new?userId=${userId}`,
 	);
 	return response.data;
 }
@@ -43,6 +45,7 @@ const LeaderBoardPage = () => {
 		queryFn: () => fetchLeaderboard(userData?.id ?? ""),
 		enabled: !!userData && !isUserLoading,
 	});
+
 	console.log({ data });
 
 	if (isUserLoading || isLeaderBoardLoading) {
@@ -67,7 +70,7 @@ const LeaderBoardPage = () => {
 		);
 	}
 
-	if (!data) {
+	if (!data || !userData) {
 		return (
 			<Card className="w-full max-w-md">
 				<CardContent className="pt-6">
@@ -77,9 +80,11 @@ const LeaderBoardPage = () => {
 		);
 	}
 	return (
-		<div className="flex w-full pb-[120px]">
+		<div className=" w-full pb-[120px]">
+			<Header />
 			<LeaderboardCard
-				currentUser={data.currentUser}
+				userData={userData}
+				count={data.count}
 				topUsers={data.topUsers}
 			/>
 		</div>
