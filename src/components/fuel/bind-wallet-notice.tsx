@@ -21,7 +21,7 @@ function BindWalletNotice() {
 					<div className="w-full flex items-center justify-between">
 						<div className=" flex items-center gap-1">
 							<Wallet className="mr-2 h-4 w-4 " />
-							<span>Bind Wallet to account</span>
+							<span>Bind X account and Wallet</span>
 						</div>
 					</div>
 				</ShinyButton>
@@ -39,6 +39,11 @@ function BindWalletNotice() {
 								<h3 className="font-semibold text-lg">How to Bind:</h3>
 								<ol className="list-decimal list-inside space-y-1">
 									<li>
+										Click on your profile picture above to generate a secret
+										code. It will be unique to your account and use to update
+										your wallet/social details. So never share
+									</li>
+									<li>
 										Go to{" "}
 										<span
 											className="underlined"
@@ -51,17 +56,21 @@ function BindWalletNotice() {
 											octaneswap.xyz/link-telegram
 										</span>
 									</li>
+									<li>Input your X username</li>
 									<li>Connect your wallet</li>
-									<li>Click &quot;Bind&quot;</li>
+									<li>Then you bind, as easy as that.😉</li>
 								</ol>
 							</div>
-							<div className="flex justify-center">
+							<div className="flex justify-center flex-col">
+								<span className="text-xs my-2">
+									Gotten your secrete code already?😊
+								</span>
 								<Link
-									href="https://octaneswap.xyz/link-telegram"
+									href="https://www.octaneswap.xyz/launch"
 									target="_blank"
 									rel="noopener noreferrer">
 									<Button className="w-full bg-gradient-to-r from-green-400 to-blue-500 hover:from-green-500 hover:to-blue-600 text-white">
-										Link Now
+										Bind Now
 										<ExternalLink className="ml-2 h-4 w-4" />
 									</Button>
 								</Link>
