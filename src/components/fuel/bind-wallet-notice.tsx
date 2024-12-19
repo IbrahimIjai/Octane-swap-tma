@@ -38,7 +38,19 @@ function BindWalletNotice() {
 							<div className="bg-muted p-4 rounded-lg space-y-2">
 								<h3 className="font-semibold text-lg">How to Bind:</h3>
 								<ol className="list-decimal list-inside space-y-1">
-									<li>Go to octaneswap.xyz/link-telegram</li>
+									<li>
+										Go to{" "}
+										<span
+											className="underlined"
+											onClick={() =>
+												window.open(
+													"https://www.octaneswap.xyz/launch",
+													"_blank",
+												)
+											}>
+											octaneswap.xyz/link-telegram
+										</span>
+									</li>
 									<li>Connect your wallet</li>
 									<li>Click &quot;Bind&quot;</li>
 								</ol>

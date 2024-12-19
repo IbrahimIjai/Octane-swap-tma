@@ -7,7 +7,7 @@ import "@telegram-apps/telegram-ui/dist/styles.css";
 import "normalize.css/normalize.css";
 import "@/lib/_assets/globals.css";
 import { Toaster } from "@/components/ui/toaster";
-
+import { Analytics } from "@vercel/analytics/react";
 import { Teko } from "next/font/google";
 const teko = Teko({ subsets: ["latin"] });
 
@@ -23,6 +23,7 @@ export default function RootLayout({ children }: PropsWithChildren) {
 				<Root>
 					{children}
 					<Toaster />
+					<Analytics />
 				</Root>
 			</body>
 		</html>

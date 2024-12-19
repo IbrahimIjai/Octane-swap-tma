@@ -221,10 +221,13 @@ const TaskRow = ({ task, userData, telegramId }: TaskRowProps) => {
 
 		if (status === "NOT_STARTED" || status === "FAILED") {
 			await startTask(task, telegramId, userData.id);
+			queryClient.invalidateQueries({ queryKey: ["user"] });
 			if (task.type.startsWith("TWITTER_") || task.type === "TELEGRAM_JOIN") {
 				const url = getSocialMediaUrl(task);
 				if (url) window.open(url, "_blank");
 			}
+
+			queryClient.invalidateQueries({ queryKey: ["user"] });
 		} else if (
 			status === "IN_PROGRESS" &&
 			!requiresAdminVerification(task.type)
@@ -234,6 +237,7 @@ const TaskRow = ({ task, userData, telegramId }: TaskRowProps) => {
 				telegramId,
 				taskId: task.id,
 			});
+			queryClient.invalidateQueries({ queryKey: ["user"] });
 		} else if (status === "COMPLETED") {
 			// Implement claim logic here
 			await claimRewards({

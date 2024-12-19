@@ -1,45 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { calculateTelegramAgeReward } from "@/lib/utils";
-import { Prisma } from "@prisma/client";
-import { corsMiddleware } from "@/lib/cors";
 
 export async function GET(req: NextRequest) {
-	// const res = new NextResponse();
-	// const corsRes = corsMiddleware(req, res);
-	// if (req.method === "OPTIONS") {
-	// 	return corsRes;
-	// }
-
 	const { searchParams } = new URL(req.url);
 	const secretCode = searchParams.get("secretCode");
+	const twitterUsername = searchParams.get("twitterUsername");
+	const address = searchParams.get("address");
 
-	console.log({ secretCode });
+	console.log({ secretCode, twitterUsername, address });
 
-	if (!secretCode) {
-		return NextResponse.json(
-			{ error: "Secret code is required" },
-			{ status: 400 },
-		);
-	}
+	// if (!secretCode) {
+	// 	return NextResponse.json(
+	// 		{ error: "At least one search parameter is required" },
+	// 		{ status: 400 },
+	// 	);
+	// }
 
 	try {
-		const user = await prisma.user.findUnique({
-			where: { secretCode },
-		});
-
-		if (user) {
-			const isFullyLinked = user.twitterUsername && user.address;
-			return NextResponse.json({
-				user,
-				isFullyLinked,
-				message: isFullyLinked
-					? "User has already linked Twitter and wallet"
-					: "User found, proceed to next step",
+		let user;
+		if (twitterUsername) {
+			user = await prisma.user.findUnique({
+				where: { twitterUsername },
 			});
-		} else {
-			return NextResponse.json({ message: "User not found" }, { status: 404 });
+		} else if (address) {
+			user = await prisma.user.findUnique({
+				where: { address },
+			});
+		} else if (secretCode) {
+			user = await prisma.user.findUnique({
+				where: { secretCode },
+			});
 		}
+
+		console.log({ user });
+
+		const isFullyLinked = user?.twitterUsername && user?.address;
+		return NextResponse.json({
+			user,
+			isFullyLinked,
+			message: isFullyLinked
+				? "User has already linked Twitter and wallet"
+				: "User found, proceed to next step",
+		});
 	} catch (error) {
 		console.error("Error fetching user:", error);
 		return NextResponse.json(
@@ -57,9 +59,12 @@ export async function POST(req: NextRequest) {
 	// 	return corsRes;
 	// }
 	const body = await req.json();
-	const { secretCode, twitterUsername, twitterUid, walletAddress } = body;
 
-	if (!secretCode || !twitterUsername || !walletAddress || !twitterUid) {
+	console.log({ body });
+
+	const { secretCode, twitterUsername, walletAddress } = body;
+
+	if (!secretCode || !twitterUsername || !walletAddress) {
 		return NextResponse.json(
 			{
 				error: "Secret code, Twitter username, and wallet address are required",
@@ -73,7 +78,7 @@ export async function POST(req: NextRequest) {
 			where: { secretCode },
 			data: {
 				twitterUsername,
-				twitterUid,
+
 				address: walletAddress,
 			},
 		});
