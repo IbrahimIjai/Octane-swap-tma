@@ -64,6 +64,8 @@ export async function POST(req: Request) {
 				},
 			},
 		});
+		
+		
 		if (
 			task.frequency === "DAILY" &&
 			taskCompletion?.completed &&

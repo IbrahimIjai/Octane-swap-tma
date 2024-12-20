@@ -104,7 +104,7 @@ export const useUser = () => {
 		onSuccess: (data) => {
 			queryClient.setQueryData(["user", telegramId], data);
 			refetchUser();
-			push("/home");
+			// push("/home");
 		},
 	});
 
