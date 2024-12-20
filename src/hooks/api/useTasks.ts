@@ -185,7 +185,7 @@ export const useTasks = () => {
 		verifyTaskMutation.isSuccess,
 		claimTaskMutation.isSuccess,
 	]);
-	
+
 	return {
 		dailyTasks,
 		isLoadingTasks,
@@ -193,14 +193,17 @@ export const useTasks = () => {
 
 		startTask: handleTaskStart,
 		isStarting: startTaskMutation.isPending,
+		isStartuccess: startTaskMutation.isSuccess,
 		startError: startTaskMutation.error,
 
 		verifyTask: verifyTaskMutation.mutateAsync,
 		isVerifying: verifyTaskMutation.isPending,
+		isVerifySuccess: verifyTaskMutation.isSuccess,
 		verifyError: verifyTaskMutation.error,
 
 		claimRewards: claimTaskMutation.mutateAsync,
 		isClaiming: claimTaskMutation.isPending,
+		isClaimSuccess: claimTaskMutation.isSuccess,
 		isClaimError: claimTaskMutation.error,
 
 		requiresAdminVerification,

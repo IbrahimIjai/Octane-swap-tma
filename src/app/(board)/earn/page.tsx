@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
@@ -20,6 +20,7 @@ import { Task, TaskCategory, TaskCompletion } from "@prisma/client";
 import { useUser } from "@/hooks/api/useUser";
 import { useTasks } from "@/hooks/api/useTasks";
 import { LocalUser } from "@/utils/types";
+import { openLink, openTelegramLink } from "@telegram-apps/sdk-react";
 
 export default function Earn() {
 	const router = useRouter();
@@ -38,6 +39,7 @@ export default function Earn() {
 		isFetchingUserSuccess,
 		userError,
 		isUserError,
+		refetchUser,
 	} = useUser();
 
 	const {
@@ -59,6 +61,7 @@ export default function Earn() {
 		isLoading,
 		isSuccess,
 		isError,
+		refetch: refetchTask,
 	} = useQuery({
 		queryFn: async () => {
 			const res = await axios.get<Task[]>("/apis/admin/tasks");
@@ -89,8 +92,8 @@ export default function Earn() {
 					<TaskRow
 						key={task.id}
 						task={task}
-						userData={userData}
-						telegramId={telegramId}
+						// userData={userData}
+						// telegramId={telegramId}
 					/>
 				))}
 		</div>
@@ -151,24 +154,45 @@ export default function Earn() {
 
 interface TaskRowProps {
 	task: Task;
-	userData: LocalUser | undefined;
-	telegramId: string;
+	// userData: LocalUser | undefined;
+	// telegramId: string;
 }
 
-const TaskRow = ({ task, userData, telegramId }: TaskRowProps) => {
+const TaskRow = ({ task }: TaskRowProps) => {
 	const {
 		startTask,
 		isStarting,
+		isStartuccess,
 
 		verifyTask,
 		isVerifying,
+		isVerifySuccess,
 
 		claimRewards,
 		isClaiming,
+		isClaimSuccess,
 
 		requiresAdminVerification,
 		getSocialMediaUrl,
 	} = useTasks();
+	const {
+		isUserReady,
+		authDate,
+		//fns
+		isStaking,
+		userData,
+		telegramId,
+		isUserLoading,
+		isFetchingUserSuccess,
+		userError,
+		isUserError,
+		refetchUser,
+	} = useUser();
+
+	useEffect(() => {
+		refetchUser();
+	}, [isStartuccess, isVerifySuccess, isClaimSuccess]);
+
 	const { toast } = useToast();
 	const queryClient = useQueryClient();
 
@@ -224,7 +248,20 @@ const TaskRow = ({ task, userData, telegramId }: TaskRowProps) => {
 			queryClient.invalidateQueries({ queryKey: ["user"] });
 			if (task.type.startsWith("TWITTER_") || task.type === "TELEGRAM_JOIN") {
 				const url = getSocialMediaUrl(task);
-				if (url) window.open(url, "_blank");
+				if (task.type.startsWith("TELEGRAM")) {
+					if (openTelegramLink.isAvailable() && url) {
+						openTelegramLink(url);
+					}
+				}
+
+				if (task.type.startsWith("TWITTER") && url) {
+					if (openLink.isAvailable()) {
+						openLink(url, {
+							tryBrowser: "chrome",
+							tryInstantView: true,
+						});
+					}
+				}
 			}
 
 			queryClient.invalidateQueries({ queryKey: ["user"] });
@@ -253,7 +290,7 @@ const TaskRow = ({ task, userData, telegramId }: TaskRowProps) => {
 		}
 	};
 
-	const trxLoading = isClaiming || isStarting || isVerifying;
+	const trxLoading = isClaiming || isStarting || isVerifying || isUserLoading;
 
 	return (
 		<Card
