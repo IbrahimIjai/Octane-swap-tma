@@ -21,13 +21,14 @@ export class StakingCalculator {
 
 		const lastTimeRewardApplicable = Math.min(
 			Date.now(),
-			pool.endTime!.getTime(),
+			pool.endTime ? pool.endTime.getTime() : Date.now(),
 		);
 
-		const timeDiff = Math.max(
-			lastTimeRewardApplicable - pool.lastUpdateTime!.getTime(),
-			0,
-		) / 1000;
+		const lastUpdateTime = pool.lastUpdateTime
+			? pool.lastUpdateTime.getTime()
+			: Date.now();
+
+		const timeDiff = Math.max(lastTimeRewardApplicable - lastUpdateTime, 0) / 1000;
 
 		const additionalReward =
 			(timeDiff * Number(pool.rewardRate) * this.PRECISION) /

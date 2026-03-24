@@ -3,8 +3,6 @@
 import {
 	CheckCircle2,
 	ChevronLeft,
-	Circle,
-	Loader2,
 	LoaderCircle,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -20,8 +18,6 @@ import axios from "axios";
 import type { Task, TaskCategory, TaskCompletion } from "@/db/types";
 import { useUser } from "@/hooks/api/useUser";
 import { useTasks } from "@/hooks/api/useTasks";
-import { LocalUser } from "@/utils/types";
-import { openLink, openTelegramLink } from "@telegram-apps/sdk-react";
 
 export default function Earn() {
 	const router = useRouter();
@@ -163,7 +159,7 @@ const TaskRow = ({ task }: TaskRowProps) => {
 	const {
 		startTask,
 		isStarting,
-		isStartuccess,
+		isStartSuccess,
 
 		verifyTask,
 		isVerifying,
@@ -177,22 +173,15 @@ const TaskRow = ({ task }: TaskRowProps) => {
 		getSocialMediaUrl,
 	} = useTasks();
 	const {
-		isUserReady,
-		authDate,
-		//fns
-		isStaking,
 		userData,
 		telegramId,
 		isUserLoading,
-		isFetchingUserSuccess,
-		userError,
-		isUserError,
 		refetchUser,
 	} = useUser();
 
 	useEffect(() => {
 		refetchUser();
-	}, [isStartuccess, isVerifySuccess, isClaimSuccess]);
+	}, [isStartSuccess, isVerifySuccess, isClaimSuccess]);
 
 	const { toast } = useToast();
 	const queryClient = useQueryClient();
@@ -205,11 +194,10 @@ const TaskRow = ({ task }: TaskRowProps) => {
 	};
 
 	const isTaskCompletedAndClaimed = (taskId: string) => {
-		return (
-			userData?.TaskCompletions?.find((task) => task.taskId === taskId) &&
-			userData?.TaskCompletions?.find((task) => task.taskId === taskId)
-				?.completed !== null
-		);
+		const completion = userData?.TaskCompletions?.find((t) => t.taskId === taskId);
+		if (!completion || completion.status !== "COMPLETED") return false;
+		const reward = userData?.Rewards?.find((r) => r.taskId === taskId);
+		return reward?.claimed !== null && reward?.claimed !== undefined;
 	};
 
 	const getButtonText = (task: Task) => {
@@ -220,13 +208,9 @@ const TaskRow = ({ task }: TaskRowProps) => {
 			case "FAILED":
 				return "Retry";
 			case "IN_PROGRESS":
-				return requiresAdminVerification(task.type)
-					? "Pending Verification"
-					: "Verify";
+				return "Verify";
 			case "COMPLETED":
-				return userData?.Rewards.find((r) => r.taskId === task.id)?.claimed
-					? "Claimed"
-					: "Claim";
+				return isTaskCompletedAndClaimed(task.id) ? "Claimed" : "Claim";
 			default:
 				return "Start";
 		}
@@ -244,60 +228,41 @@ const TaskRow = ({ task }: TaskRowProps) => {
 
 		const status = getTaskStatus(task.id);
 
-		if (status === "NOT_STARTED" || status === "FAILED") {
-			await startTask(task, telegramId, userData.id);
-			queryClient.invalidateQueries({ queryKey: ["user"] });
-			if (task.type.startsWith("TWITTER_") || task.type === "TELEGRAM_JOIN") {
-				const url = getSocialMediaUrl(task);
-				if (task.type.startsWith("TELEGRAM")) {
-					if (openTelegramLink.isAvailable() && url) {
-						openTelegramLink(url);
-					}
-				}
-
-				if (task.type.startsWith("TWITTER") && url) {
-					if (openLink.isAvailable()) {
-						openLink(url, {
-							tryBrowser: "chrome",
-							tryInstantView: true,
-						});
-					}
-				}
+		try {
+			if (status === "NOT_STARTED" || status === "FAILED") {
+				// startTask already opens the social media URL via useTasks hook
+				await startTask(task, telegramId, userData.id);
+				queryClient.invalidateQueries({ queryKey: ["user"] });
+			} else if (status === "IN_PROGRESS") {
+				await verifyTask({
+					userId: userData.id,
+					telegramId,
+					taskId: task.id,
+				});
+				queryClient.invalidateQueries({ queryKey: ["user"] });
+			} else if (status === "COMPLETED") {
+				if (isTaskCompletedAndClaimed(task.id)) return; // Already claimed
+				await claimRewards({
+					userId: userData.id,
+					telegramId: userData.telegramId ?? "",
+					taskId: task.id,
+				});
+				queryClient.invalidateQueries({ queryKey: ["user"] });
 			}
-
-			queryClient.invalidateQueries({ queryKey: ["user"] });
-		} else if (
-			status === "IN_PROGRESS" &&
-			!requiresAdminVerification(task.type)
-		) {
-			await verifyTask({
-				userId: userData.id,
-				telegramId,
-				taskId: task.id,
-			});
-			queryClient.invalidateQueries({ queryKey: ["user"] });
-		} else if (status === "COMPLETED") {
-			// Implement claim logic here
-			await claimRewards({
-				userId: userData.id,
-				telegramId: userData.telegramId ?? "",
-				taskId: task.id,
-			});
-			toast({
-				title: "Success",
-				description: "Rewards claimed successfully!",
-			});
-			queryClient.invalidateQueries({ queryKey: ["user"] });
+		} catch (error) {
+			console.error("Task action failed:", error);
 		}
 	};
 
-	const trxLoading = isClaiming || isStarting || isVerifying || isUserLoading;
+	const trxLoading = isClaiming || isStarting || isVerifying;
+	const status = getTaskStatus(task.id);
+	const isClaimed = isTaskCompletedAndClaimed(task.id);
 
 	return (
 		<Card
 			key={task.id}
 			className={`transition-colors border ${
-				isTaskCompletedAndClaimed(task.id) ? "bg-primary/10" : "bg-card"
+				isClaimed ? "bg-primary/10" : "bg-card"
 			} `}>
 			<CardContent className="flex justify-between items-center p-4">
 				<div className="space-y-1">
@@ -308,14 +273,10 @@ const TaskRow = ({ task }: TaskRowProps) => {
 				</div>
 				<Button
 					onClick={() => handleTaskAction(task)}
-					disabled={
-						getTaskStatus(task.id) === "IN_PROGRESS" &&
-						requiresAdminVerification(task.type)
-					}>
-					{!trxLoading && getTaskStatus(task.id) === "NOT_STARTED" && (
-						<Circle className="w-4 h-4 mr-2 animate-spin" />
-					)}
-					{trxLoading && <LoaderCircle className="w-3 h-3" />}
+					disabled={trxLoading || isClaimed}
+					variant={isClaimed ? "outline" : "default"}>
+					{trxLoading && <LoaderCircle className="w-4 h-4 mr-2 animate-spin" />}
+					{!trxLoading && isClaimed && <CheckCircle2 className="w-4 h-4 mr-2" />}
 					{getButtonText(task)}
 				</Button>
 			</CardContent>

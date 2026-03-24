@@ -48,12 +48,18 @@ export const useUser = () => {
 	const getActiveStakingPools = () => {
 		const now = new Date();
 		return (
-			userData?.StakingPositions?.filter(
-				(position) =>
-					Number(position.amount) > 0 &&
-					new Date(position.pool.startTime) <= now &&
-					new Date(position.pool.endTime) > now,
-			) || []
+			userData?.StakingPositions?.filter((position) => {
+				if (
+					!position.pool.startTime ||
+					!position.pool.endTime ||
+					Number(position.amount) <= 0
+				) {
+					return false;
+				}
+				const start = new Date(position.pool.startTime);
+				const end = new Date(position.pool.endTime);
+				return start <= now && end > now;
+			}) || []
 		);
 	};
 
@@ -68,14 +74,22 @@ export const useUser = () => {
 	const getUserPositionsInfo = () => {
 		if (userData?.StakingPositions) {
 			return (
-				userData?.StakingPositions?.map((position) => ({
-					isEnded: new Date(position.pool.endTime) < new Date(),
-					isActive:
-						new Date(position.pool.startTime) <= new Date() &&
-						new Date(position.pool.endTime) > new Date(),
+				userData?.StakingPositions?.map((position) => {
+					const now = new Date();
+					const startTime = position.pool.startTime
+						? new Date(position.pool.startTime)
+						: null;
+					const endTime = position.pool.endTime
+						? new Date(position.pool.endTime)
+						: null;
 
-					...position,
-				})) || []
+					return {
+						isEnded: endTime ? endTime < now : false,
+						isActive:
+							startTime && endTime ? startTime <= now && endTime > now : false,
+						...position,
+					};
+				}) || []
 			);
 		} else {
 			[];

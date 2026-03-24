@@ -8,7 +8,7 @@ import { Trophy } from "lucide-react";
 import { useUser } from "@/hooks/api/useUser";
 import axios from "axios";
 import LeaderboardCard from "./components/leaderboard-card";
-import { User } from "@prisma/client";
+import type { User } from "@/db/types";
 import Header from "@/components/layout/header";
 
 type LeaderboardEntry = {

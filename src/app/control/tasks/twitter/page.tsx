@@ -175,7 +175,7 @@ export default function AdminTwitterTasks() {
 														verifyMutation.mutate({
 															taskId: task.id,
 															userId: completion.user.id,
-															completionStatus: completion.status,
+															completionStatus: completion.status as TaskStatus,
 															modeVedict: "COMPLETED",
 														})
 													}
@@ -190,7 +190,7 @@ export default function AdminTwitterTasks() {
 														verifyMutation.mutate({
 															taskId: task.id,
 															userId: completion.user.id,
-															completionStatus: completion.status,
+															completionStatus: completion.status as TaskStatus,
 															modeVedict: "FAILED",
 														})
 													}>

@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Clock, Award } from "lucide-react";
 import { useUser } from "@/hooks/api/useUser";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Reward } from "@prisma/client";
+import type { Reward } from "@/db/types";
 
 const REWARD_TYPE_LABELS: Record<string, string> = {
 	WELCOME: "Welcome Bonus",
@@ -106,11 +106,11 @@ function History() {
 							<CardContent className="flex justify-between items-center p-4">
 								<div className="space-y-1">
 									<p className="text-card-foreground font-medium">
-										{REWARD_TYPE_LABELS[reward.type] || "Unknown Reward"}
+										{REWARD_TYPE_LABELS[reward.type || ""] || "Unknown Reward"}
 									</p>
 									<div className="flex items-center text-sm text-muted-foreground">
 										<Clock className="w-4 h-4 mr-1" />
-										{formatRelativeTime(reward.createdAt)}
+										{formatRelativeTime(reward.createdAt as any)}
 									</div>
 								</div>
 								<div className="flex items-center gap-2">

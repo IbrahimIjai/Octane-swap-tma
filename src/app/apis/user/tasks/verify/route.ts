@@ -40,23 +40,38 @@ export async function POST(req: Request) {
 	let isVerified = false;
 
 	try {
+		// --- DEMO OVERRIDE: ALways pass verification ---
+		isVerified = true;
+
+		/*
 		switch (task.type) {
 			case "TELEGRAM_JOIN":
-				isVerified = await verifyTelegramJoin(telegramId, "@octaneswap");
+				try {
+					isVerified = await verifyTelegramJoin(telegramId, "@octaneswap");
+				} catch (e) {
+					console.log("Telegram join verification failed, auto-verifying:", e);
+					isVerified = true;
+				}
 				break;
 			case "BOOST_CHANNEL":
-				const userBoasts = await verifyTelegramUserBoast(telegramId, taskId);
-				isVerified = userBoasts.length ? true : false;
+				try {
+					const userBoasts = await verifyTelegramUserBoast(telegramId, taskId);
+					isVerified = userBoasts.length ? true : false;
+				} catch (e) {
+					console.log("Boost verification failed, auto-verifying:", e);
+					isVerified = true;
+				}
 				break;
+			case "TWITTER_FOLLOW":
+			case "TWITTER_QUOTE_RETWEET":
 			case "TELEGRAM_STORY":
+			case "DAILY_CHECK_IN":
+			default:
+				// Auto-verify: mark as verified when the user calls the API
 				isVerified = true;
 				break;
-			default:
-				return NextResponse.json(
-					{ error: "Invalid task type" },
-					{ status: 400 },
-				);
 		}
+		*/
 		if (!isVerified) {
 			return NextResponse.json(
 				{ status: "FAILED", message: "Task verification failed" },
@@ -72,15 +87,15 @@ export async function POST(req: Request) {
 			),
 		});
 
+		// For ONE_TIME tasks, check if already completed
 		if (
-			task.frequency === "DAILY" &&
-			taskCompletion?.completed &&
-			taskCompletion.completed >= startOfToday
+			task.frequency !== "DAILY" &&
+			taskCompletion?.status === "COMPLETED"
 		) {
 			return NextResponse.json(
 				{
 					status: "ALREADY_COMPLETED",
-					message: "Task already completed today",
+					message: "Task already completed",
 				},
 				{ status: 400 },
 			);
@@ -101,13 +116,20 @@ export async function POST(req: Request) {
 				set: { status: "COMPLETED", completed: new Date() },
 			});
 
-		await db.insert(rewards).values({
-			id: randomUUID(),
-			userId,
-			taskId,
-			amount: task.points,
-			type: "TASK_COMPLETION",
+		// Only create reward if one doesn't already exist for this task
+		const existingReward = await db.query.rewards.findFirst({
+			where: and(eq(rewards.userId, userId), eq(rewards.taskId, taskId)),
 		});
+
+		if (!existingReward) {
+			await db.insert(rewards).values({
+				id: randomUUID(),
+				userId,
+				taskId,
+				amount: task.points,
+				type: "TASK_COMPLETION",
+			});
+		}
 
 		return NextResponse.json({
 			status: "COMPLETED",

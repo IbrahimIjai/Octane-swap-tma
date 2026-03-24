@@ -4,7 +4,7 @@ import { Trophy } from "lucide-react";
 import { useProfilePhoto } from "@/hooks/usePrrofilePics";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar } from "@telegram-apps/telegram-ui";
-import { User } from "@prisma/client";
+import type { User } from "@/db/types";
 import { LocalUser } from "@/utils/types";
 
 type LeaderboardEntry = {
@@ -41,7 +41,7 @@ const LeaderboardCard = ({ count, topUsers, userData }: LeaderboardProps) => {
 					<UserRow
 						entry={{
 							id: userData.id,
-							telegramUsername: userData.telegramUsername,
+							telegramUsername: userData.telegramUsername ?? "Anonymous",
 							telegramId: Number(userData.telegramId),
 							rank: Number(count),
 							score: Number(userData.totalRewards!),
@@ -66,7 +66,7 @@ const LeaderboardCard = ({ count, topUsers, userData }: LeaderboardProps) => {
 								key={entry.id}
 								entry={{
 									id: entry.id,
-									telegramUsername: entry.telegramUsername,
+									telegramUsername: entry.telegramUsername ?? "Anonymous",
 									telegramId: Number(entry.telegramId),
 									rank: i + 1,
 									score: Number(entry.totalRewards),

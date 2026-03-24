@@ -39,7 +39,8 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import axios, { AxiosError } from "axios";
 // PRISMA: import { StakingPool, PoolName, PoolCategory, StakingPosition } from "@prisma/client";
-import type { StakingPool, StakingPosition, PoolName, PoolCategory } from "@/db/types";
+import { PoolName, PoolCategory } from "@/db/types";
+import type { StakingPool, StakingPosition } from "@/db/types";
 import { CreatePoolDTO } from "@/lib/types";
 import { api } from "@/lib/axios";
 import { useToast } from "@/hooks/use-toast";
@@ -315,10 +316,10 @@ export default function AdminControlPage() {
 								<AccordionItem key={pool.id} value={pool.id}>
 									<AccordionTrigger onClick={() => setSelectedPool(pool)}>
 										<div className="flex justify-between w-full">
-											<span>{pool.poolName.replace(/_/g, " ")}</span>
+											<span>{(pool.poolName || "").replace(/_/g, " ")}</span>
 											<span className="text-muted-foreground">
-												{format(new Date(pool.startTime), "dd MMM yyyy")} -{" "}
-												{format(new Date(pool.endTime), "dd MMM yyyy")}
+												{format(new Date(pool.startTime as any), "dd MMM yyyy")} -{" "}
+												{format(new Date(pool.endTime as any), "dd MMM yyyy")}
 											</span>
 										</div>
 									</AccordionTrigger>
@@ -341,15 +342,15 @@ export default function AdminControlPage() {
 											</p>
 											<p>
 												<strong>Start Time:</strong>{" "}
-												{format(new Date(pool.startTime), "PPP HH:mm")}
+												{format(new Date(pool.startTime as any), "PPP HH:mm")}
 											</p>
 											<p>
 												<strong>End Time:</strong>{" "}
-												{format(new Date(pool.endTime), "PPP HH:mm")}
+												{format(new Date(pool.endTime as any), "PPP HH:mm")}
 											</p>
 											<p>
 												<strong>Last Updated:</strong>{" "}
-												{format(new Date(pool.lastUpdateTime), "PPP HH:mm")}
+												{format(new Date(pool.lastUpdateTime as any), "PPP HH:mm")}
 											</p>
 											<div className="flex items-center space-x-2 mt-4">
 												<Users className="h-5 w-5 text-blue-500" />
@@ -360,20 +361,20 @@ export default function AdminControlPage() {
 											<div className="flex items-center space-x-2">
 												<Clock className="h-5 w-5 text-green-500" />
 												<span>
-													{new Date() < new Date(pool.startTime)
+													{new Date() < new Date(pool.startTime as any)
 														? `Starts in ${differenceInDays(
-																new Date(pool.startTime),
+																new Date(pool.startTime as any),
 																new Date(),
 														  )} days`
-														: new Date() < new Date(pool.endTime)
+														: new Date() < new Date(pool.endTime as any)
 														? `Ends in ${differenceInDays(
-																new Date(pool.endTime),
+																new Date(pool.endTime as any),
 																new Date(),
 														  )} days`
 														: "Ended"}
 												</span>
 											</div>
-											{new Date() > new Date(pool.endTime) && (
+											{new Date() > new Date(pool.endTime as any) && (
 												<div className="flex items-center space-x-2 text-yellow-500">
 													<AlertTriangle className="h-5 w-5" />
 													<span>

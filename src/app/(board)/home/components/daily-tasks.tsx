@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { LoaderCircle, Trophy } from "lucide-react";
+import { CheckCircle2, LoaderCircle, Trophy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { Task, TaskCompletion } from "@prisma/client";
+import type { Task, TaskCompletion } from "@/db/types";
 import { LocalUser } from "@/utils/types";
 import { shareStory } from "@telegram-apps/sdk-react";
 import { useTasks } from "@/hooks/api/useTasks";
@@ -119,7 +119,9 @@ const TaskRow = ({ task, userData }: TaskRowProps) => {
 		if (!completion) return "NOT_STARTED";
 
 		const startOfToday = getStartOfTodayInTimeZone();
-		const completionDate = new Date(completion.completed || 0);
+		const completionDate = completion.completed
+			? new Date(completion.completed)
+			: new Date(0);
 
 		if (isAfter(completionDate, startOfToday)) {
 			return completion.status;
@@ -135,9 +137,10 @@ const TaskRow = ({ task, userData }: TaskRowProps) => {
 		return _task && _task?.completed;
 	};
 
-	const isClaimed = (taskId: string) => {
-		return userData?.Rewards.find((reward) => reward.taskId === taskId)
-			?.claimed;
+	const isClaimedToday = (taskId: string) => {
+		const reward = userData?.Rewards.find((reward) => reward.taskId === taskId);
+		if (!reward || !reward.claimed) return false;
+		return isAfter(new Date(reward.claimed), getStartOfTodayInTimeZone());
 	};
 
 	const sharePost = async () => {
@@ -178,7 +181,9 @@ const TaskRow = ({ task, userData }: TaskRowProps) => {
 
 		if (status === "NOT_STARTED" || status === "FAILED") {
 			await startTask(task, userData?.telegramId ?? "", userData.id);
-			await sharePost();
+			if (task.type === "TELEGRAM_STORY") {
+				await sharePost();
+			}
 		} else if (status === "IN_PROGRESS") {
 			await verifyTask({
 				userId: userData.id,
@@ -186,15 +191,12 @@ const TaskRow = ({ task, userData }: TaskRowProps) => {
 				taskId: task.id,
 			});
 		} else if (status === "COMPLETED") {
+			if (isClaimedToday(task.id)) return;
 			// Implement claim logic here
 			await claimRewards({
 				userId: userData.id,
 				telegramId: userData.telegramId ?? "",
 				taskId: task.id,
-			});
-			toast({
-				title: "Success",
-				description: "Rewards claimed successfully!",
 			});
 			queryClient.invalidateQueries({ queryKey: ["user"] });
 		}
@@ -208,13 +210,9 @@ const TaskRow = ({ task, userData }: TaskRowProps) => {
 			case "FAILED":
 				return "Retry";
 			case "IN_PROGRESS":
-				return requiresAdminVerification(task.type)
-					? "Pending Verification"
-					: "Verify";
+				return "Verify";
 			case "COMPLETED":
-				return userData?.Rewards.find((r) => r.taskId === task.id)?.claimed
-					? "Claimed"
-					: "Claim";
+				return isClaimedToday(task.id) ? "Claimed" : "Claim";
 			default:
 				return "Start";
 		}
@@ -233,7 +231,7 @@ const TaskRow = ({ task, userData }: TaskRowProps) => {
 	};
 
 	useEffect(() => {
-		if (isTaskCompletedToday(task.id) && isClaimed(task.id)) {
+		if (isTaskCompletedToday(task.id) && isClaimedToday(task.id)) {
 			const interval = setInterval(() => {
 				const startOfToday = getStartOfTodayInTimeZone();
 				const nextClaimTime = addDays(startOfToday, 1);
@@ -256,16 +254,16 @@ const TaskRow = ({ task, userData }: TaskRowProps) => {
 
 			return () => clearInterval(interval);
 		}
-	}, [task.id, isTaskCompletedToday, isClaimed]);
+	}, [task.id, isTaskCompletedToday, isClaimedToday]);
 
 	const trxLoading = isClaiming || isStarting || isVerifying;
 
 	return (
 		<Card
 			key={task.id}
-			className={`bg-card transition-colors ${
-				isTaskCompleted(task.id) && "bg-primary/10"
-			}`}>
+			className={`transition-colors border ${
+				isClaimedToday(task.id) ? "bg-primary/10" : "bg-card"
+			} `}>
 			<CardContent className="flex justify-between items-center p-4">
 				<div className="space-y-1">
 					<p className="text-card-foreground font-medium">{task.title}</p>
@@ -274,15 +272,11 @@ const TaskRow = ({ task, userData }: TaskRowProps) => {
 					</Badge>
 				</div>
 				<Button
-					disabled={
-						!!(
-							isTaskCompletedToday(task.id) &&
-							isClaimed(task.id) &&
-							!countdown
-						)
-					}
+					disabled={trxLoading || isClaimedToday(task.id)}
+					variant={isClaimedToday(task.id) ? "outline" : "default"}
 					onClick={() => handleTaskAction(task)}>
-					{trxLoading && <LoaderCircle className="w-3 h-3 animate-spin mr-2" />}
+					{trxLoading && <LoaderCircle className="w-4 h-4 mr-2 animate-spin" />}
+					{!trxLoading && isClaimedToday(task.id) && <CheckCircle2 className="w-4 h-4 mr-2" />}
 					{getButtonText(task)}
 				</Button>
 			</CardContent>

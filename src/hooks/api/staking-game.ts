@@ -67,22 +67,29 @@ export const useUserStake = ({
 
 	const getActivePool = () => {
 		const now = new Date();
-		return userWithStaking?.StakingPositions.find(
-			(position) =>
-				new Date(position.pool.startTime) <= now &&
-				new Date(position.pool.endTime) > now,
-		);
+		return userWithStaking?.StakingPositions.find((position) => {
+			if (!position.pool.startTime || !position.pool.endTime) return false;
+			const start = new Date(position.pool.startTime);
+			const end = new Date(position.pool.endTime);
+			return start <= now && end > now;
+		});
 	};
 
 	const getActiveStakingPools = () => {
 		const now = new Date();
 		return (
-			userWithStaking?.StakingPositions?.filter(
-				(position) =>
-					Number(position.amount) > 0 &&
-					new Date(position.pool.startTime) <= now &&
-					new Date(position.pool.endTime) > now,
-			) || []
+			userWithStaking?.StakingPositions?.filter((position) => {
+				if (
+					!position.pool.startTime ||
+					!position.pool.endTime ||
+					Number(position.amount) <= 0
+				) {
+					return false;
+				}
+				const start = new Date(position.pool.startTime);
+				const end = new Date(position.pool.endTime);
+				return start <= now && end > now;
+			}) || []
 		);
 	};
 
@@ -101,14 +108,22 @@ export const useUserStake = ({
 
 	const getUserPositionsInfo = () => {
 		return (
-			userWithStaking?.StakingPositions.map((position) => ({
-				isEnded: new Date(position.pool.endTime) < new Date(),
-				isActive:
-					new Date(position.pool.startTime) <= new Date() &&
-					new Date(position.pool.endTime) > new Date(),
+			userWithStaking?.StakingPositions.map((position) => {
+				const now = new Date();
+				const startTime = position.pool.startTime
+					? new Date(position.pool.startTime)
+					: null;
+				const endTime = position.pool.endTime
+					? new Date(position.pool.endTime)
+					: null;
 
-				...position,
-			})) || []
+				return {
+					isEnded: endTime ? endTime < now : false,
+					isActive:
+						startTime && endTime ? startTime <= now && endTime > now : false,
+					...position,
+				};
+			}) || []
 		);
 	};
 

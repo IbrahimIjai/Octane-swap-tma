@@ -44,6 +44,7 @@ export const useStakingProtocol = (userId?: string) => {
 
 		// First try to find an active pool
 		const activePool = pools.find((pool) => {
+			if (!pool.startTime || !pool.endTime) return false;
 			const startTime = new Date(pool.startTime).getTime();
 			const endTime = new Date(pool.endTime).getTime();
 			return now >= startTime && now <= endTime;
@@ -53,11 +54,16 @@ export const useStakingProtocol = (userId?: string) => {
 
 		// If no active pool, find the next upcoming pool
 		const upcomingPools = pools
-			.filter((pool) => new Date(pool.startTime).getTime() > now)
-			.sort(
-				(a, b) =>
-					new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
-			);
+			.filter((pool) => {
+				if (!pool.startTime) return false;
+				return new Date(pool.startTime).getTime() > now;
+			})
+			.sort((a, b) => {
+				if (!a.startTime || !b.startTime) return 0;
+				return (
+					new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+				);
+			});
 
 		return upcomingPools[0] || null;
 	};
@@ -65,8 +71,8 @@ export const useStakingProtocol = (userId?: string) => {
 	// Calculate pool statistics
 	const calculatePoolStats = (pool: PoolWithPosition): PoolStats => {
 		const now = new Date().getTime();
-		const startTime = new Date(pool.startTime).getTime();
-		const endTime = new Date(pool.endTime).getTime();
+		const startTime = pool.startTime ? new Date(pool.startTime).getTime() : 0;
+		const endTime = pool.endTime ? new Date(pool.endTime).getTime() : 0;
 
 		// Calculate total rewards minted from all positions
 		const totalRewardsMinted = pool.positions.reduce(

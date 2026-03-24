@@ -3,7 +3,7 @@ import axios, { AxiosError } from "axios";
 import { useToast } from "../use-toast";
 // PRISMA: import { Task, TaskCompletion } from "@prisma/client";
 import type { Task, TaskCompletion } from "@/db/types";
-import { openLink } from "@telegram-apps/sdk-react";
+import { openLink, openTelegramLink } from "@telegram-apps/sdk-react";
 import { ActionData } from "@/lib/types";
 // PRISMA: import { JsonValue } from "@prisma/client/runtime/library";
 import type { JsonValue } from "@/lib/types";
@@ -67,14 +67,49 @@ export const useTasks = () => {
 			);
 			return data;
 		},
+		onMutate: async ({ userId, taskId, telegramId }) => {
+			await queryClient.cancelQueries({ queryKey: ["userData", telegramId] });
+			const previousUser = queryClient.getQueryData(["userData", telegramId]);
+
+			queryClient.setQueryData(["userData", telegramId], (old: any) => {
+				if (!old) return old;
+				const existingCompletions = old.TaskCompletions || [];
+				const exists = existingCompletions.find((c: any) => c.taskId === taskId);
+				
+				if (exists) {
+					return {
+						...old,
+						TaskCompletions: existingCompletions.map((c: any) =>
+							c.taskId === taskId ? { ...c, status: "IN_PROGRESS" } : c
+						),
+					};
+				}
+				return {
+					...old,
+					TaskCompletions: [
+						...existingCompletions,
+						{ id: "temp", userId, taskId, status: "IN_PROGRESS", task: { id: taskId } },
+					],
+				};
+			});
+
+			return { previousUser, telegramId };
+		},
 		onSuccess: (data, variables) => {
 			toast({
 				title: "Task Started",
 				description: "Your task is now in progress",
 			});
-			invalidateTaskQueries();
 		},
-		onError: handleError,
+		onError: (error: AxiosError<TaskError>, variables, context: any) => {
+			if (context?.previousUser) {
+				queryClient.setQueryData(["userData", context.telegramId], context.previousUser);
+			}
+			handleError(error);
+		},
+		onSettled: (data, error, variables) => {
+			queryClient.invalidateQueries({ queryKey: ["userData", variables.telegramId] });
+		},
 	});
 
 	const verifyTaskMutation = useMutation({
@@ -86,14 +121,39 @@ export const useTasks = () => {
 			});
 			return data;
 		},
-		onSuccess: (data) => {
+		onMutate: async ({ userId, taskId, telegramId }) => {
+			await queryClient.cancelQueries({ queryKey: ["userData", telegramId] });
+			const previousUser = queryClient.getQueryData(["userData", telegramId]);
+
+			queryClient.setQueryData(["userData", telegramId], (old: any) => {
+				if (!old) return old;
+				const existingCompletions = old.TaskCompletions || [];
+				
+				return {
+					...old,
+					TaskCompletions: existingCompletions.map((c: any) =>
+						c.taskId === taskId ? { ...c, status: "COMPLETED", completed: new Date() } : c
+					),
+				};
+			});
+
+			return { previousUser, telegramId };
+		},
+		onSuccess: (data, variables) => {
 			toast({
 				title: "Task Verified",
 				description: data.message || "Task completed successfully!",
 			});
-			invalidateTaskQueries();
 		},
-		onError: handleError,
+		onError: (error: AxiosError<TaskError>, variables, context: any) => {
+			if (context?.previousUser) {
+				queryClient.setQueryData(["userData", context.telegramId], context.previousUser);
+			}
+			handleError(error);
+		},
+		onSettled: (data, error, variables) => {
+			queryClient.invalidateQueries({ queryKey: ["userData", variables.telegramId] });
+		},
 	});
 
 	const claimTaskMutation = useMutation({
@@ -104,18 +164,54 @@ export const useTasks = () => {
 			});
 			return data;
 		},
-		onSuccess: (data) => {
-			toast({
-				title: "Task Verified",
-				description: data.message || "Task completed successfully!",
+		onMutate: async ({ userId, taskId, telegramId }) => {
+			await queryClient.cancelQueries({ queryKey: ["userData", telegramId] });
+			const previousUser = queryClient.getQueryData(["userData", telegramId]);
+
+			queryClient.setQueryData(["userData", telegramId], (old: any) => {
+				if (!old) return old;
+				const existingRewards = old.Rewards || [];
+				const exists = existingRewards.find((r: any) => r.taskId === taskId);
+
+				if (exists) {
+					return {
+						...old,
+						Rewards: existingRewards.map((r: any) =>
+							r.taskId === taskId ? { ...r, claimed: new Date() } : r
+						),
+					};
+				}
+
+				return {
+					...old,
+					Rewards: [
+						...existingRewards,
+						{ id: "temp", userId, taskId, claimed: new Date() },
+					],
+				};
 			});
-			invalidateTaskQueries();
+
+			return { previousUser, telegramId };
 		},
-		onError: handleError,
+		onSuccess: (data, variables) => {
+			toast({
+				title: "Rewards Claimed",
+				description: data.message || "Your rewards have been successfully claimed!",
+			});
+		},
+		onError: (error: AxiosError<TaskError>, variables, context: any) => {
+			if (context?.previousUser) {
+				queryClient.setQueryData(["userData", context.telegramId], context.previousUser);
+			}
+			handleError(error);
+		},
+		onSettled: (data, error, variables) => {
+			queryClient.invalidateQueries({ queryKey: ["userData", variables.telegramId] });
+		},
 	});
 
 	// Helper function to get social media URL
-	const parseActionData = (actionData: JsonValue | null): ActionData => {
+	const parseActionData = (actionData: unknown): ActionData => {
 		if (typeof actionData === "string") {
 			try {
 				return JSON.parse(actionData) as ActionData;
@@ -153,12 +249,8 @@ export const useTasks = () => {
 		}
 	};
 	const requiresAdminVerification = (taskType: string): boolean => {
-		return [
-			"TWITTER_FOLLOW",
-			"TWITTER_QUOTE_RETWEET",
-			// "YOUTUBE_SUBSCRIBE",
-			// "INSTAGRAM_FOLLOW",
-		].includes(taskType);
+		// All tasks now auto-verify — no admin review needed
+		return false;
 	};
 
 	const handleTaskStart = async (
@@ -173,10 +265,27 @@ export const useTasks = () => {
 		});
 		const socialUrl = getSocialMediaUrl(task);
 		if (socialUrl) {
-			openLink(`${socialUrl}`, {
-				tryBrowser: "chrome",
-				tryInstantView: true,
-			});
+			try {
+				if ((task.type || "").startsWith("TELEGRAM")) {
+					if (openTelegramLink.isAvailable()) {
+						openTelegramLink(socialUrl);
+					} else {
+						window.open(socialUrl, "_blank");
+					}
+				} else {
+					if (openLink.isAvailable()) {
+						openLink(socialUrl, {
+							tryBrowser: "chrome",
+							tryInstantView: true,
+						});
+					} else {
+						window.open(socialUrl, "_blank");
+					}
+				}
+			} catch (e) {
+				// Fallback: open in new tab if SDK not available
+				window.open(socialUrl, "_blank");
+			}
 		}
 	};
 
@@ -195,7 +304,7 @@ export const useTasks = () => {
 
 		startTask: handleTaskStart,
 		isStarting: startTaskMutation.isPending,
-		isStartuccess: startTaskMutation.isSuccess,
+		isStartSuccess: startTaskMutation.isSuccess,
 		startError: startTaskMutation.error,
 
 		verifyTask: verifyTaskMutation.mutateAsync,
