@@ -9,7 +9,8 @@
 		"postinstall": "prisma generate --no-engine",
 		"pushDb": "prisma db push",
 		"start": "next start",
-		"lint": "next lint"
+		"lint": "next lint",
+		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
 		"@fuels/connectors": "^0.36.1",
