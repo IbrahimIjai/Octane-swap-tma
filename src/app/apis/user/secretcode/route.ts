@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-// PRISMA: import { prisma } from "@/lib/prisma";
 import { db } from "@/db/drizzle";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -8,7 +7,6 @@ export async function POST(req: Request) {
 	try {
 		const { secretCode, userId } = await req.json();
 
-		// PRISMA: const user = await prisma.user.update({ where: { id: userId }, data: { secretCode } });
 		const [user] = await db
 			.update(users)
 			.set({ secretCode })
@@ -39,7 +37,6 @@ export async function GET(req: Request) {
 	try {
 		const { secretCode } = await req.json();
 
-		// PRISMA: const user = await prisma.user.findUnique({ where: { secretCode } });
 		const user = await db.query.users.findFirst({
 			where: eq(users.secretCode, secretCode),
 		});

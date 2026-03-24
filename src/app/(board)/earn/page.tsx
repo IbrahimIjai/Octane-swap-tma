@@ -14,7 +14,6 @@ import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-// PRISMA: import { Task, TaskCategory, TaskCompletion } from "@prisma/client";
 import type { Task, TaskCategory, TaskCompletion } from "@/db/types";
 import { useUser } from "@/hooks/api/useUser";
 import { useTasks } from "@/hooks/api/useTasks";

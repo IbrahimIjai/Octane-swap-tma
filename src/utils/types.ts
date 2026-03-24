@@ -1,5 +1,3 @@
-// PRISMA: import { Reward, StakingPool, StakingPosition, TaskCompletion, User } from "@prisma/client";
-// PRISMA: import { Decimal } from "@prisma/client/runtime/library";
 import type {
 	Reward,
 	StakingPool,

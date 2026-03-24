@@ -2,7 +2,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { useToast } from "../use-toast";
-// PRISMA: import { Prisma, StakingPool, StakingPosition, User } from "@prisma/client";
 import type { StakingPool, StakingPosition, User } from "@/db/types";
 import { SECONDS_PER_YEAR } from "@/lib/config";
 // Types

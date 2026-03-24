@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-// PRISMA: import { prisma } from "@/lib/prisma";
 import { db } from "@/db/drizzle";
 import { rewards, tasks, users } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
@@ -10,7 +9,6 @@ export async function POST(req: Request) {
 		return NextResponse.json({ error: "Task not found" }, { status: 404 });
 	}
 
-	// PRISMA: const reward = await prisma.reward.findUnique({ where: { userId_taskId: { userId, taskId } } });
 	const reward = await db.query.rewards.findFirst({
 		where: and(eq(rewards.userId, userId), eq(rewards.taskId, taskId)),
 	});
@@ -19,7 +17,6 @@ export async function POST(req: Request) {
 		return NextResponse.json({ error: "Reward not found" }, { status: 404 });
 	}
 
-	// PRISMA: const _task = await prisma.task.findUnique({ where: { id: taskId } });
 	const _task = await db.query.tasks.findFirst({
 		where: eq(tasks.id, taskId),
 	});
@@ -37,7 +34,6 @@ export async function POST(req: Request) {
 	}
 
 	// Update reward status and user balance
-	// PRISMA: const updatedReward = await prisma.$transaction(async (prisma) => { ... });
 	const [claimedReward] = await db
 		.update(rewards)
 		.set({ claimed: new Date() })

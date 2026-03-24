@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-// PRISMA: import { prisma } from "@/lib/prisma";
 import { db } from "@/db/drizzle";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -15,13 +14,10 @@ export async function GET(req: NextRequest) {
 	try {
 		let user;
 		if (twitterUsername) {
-			// PRISMA: user = await prisma.user.findUnique({ where: { twitterUsername } });
 			user = await db.query.users.findFirst({ where: eq(users.twitterUsername, twitterUsername) });
 		} else if (address) {
-			// PRISMA: user = await prisma.user.findUnique({ where: { address } });
 			user = await db.query.users.findFirst({ where: eq(users.address, address) });
 		} else if (secretCode) {
-			// PRISMA: user = await prisma.user.findUnique({ where: { secretCode } });
 			user = await db.query.users.findFirst({ where: eq(users.secretCode, secretCode) });
 		}
 
@@ -58,7 +54,6 @@ export async function POST(req: NextRequest) {
 	}
 
 	try {
-		// PRISMA: const updatedUser = await prisma.user.update({ where: { secretCode }, data: { twitterUsername, address: walletAddress } });
 		const [updatedUser] = await db
 			.update(users)
 			.set({ twitterUsername, address: walletAddress })

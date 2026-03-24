@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-// PRISMA: import { prisma } from "@/lib/prisma";
 import { db } from "@/db/drizzle";
 import { users } from "@/db/schema";
 import { eq, desc, asc, gt, and, lt, count, sql } from "drizzle-orm";
@@ -24,13 +23,11 @@ export async function GET(req: NextRequest) {
 	}
 
 	try {
-		// PRISMA: const topUsers = await prisma.user.findMany({ orderBy: [{ totalRewards: "desc" }, { createdAt: "asc" }], take: 100 });
 		const topUsers = await db.query.users.findMany({
 			orderBy: [desc(users.totalRewards), asc(users.createdAt)],
 			limit: 100,
 		});
 
-		// PRISMA: const user = await prisma.user.findUnique({ where: { id: userId } });
 		const user = await db.query.users.findFirst({
 			where: eq(users.id, userId),
 		});
@@ -39,7 +36,6 @@ export async function GET(req: NextRequest) {
 			return NextResponse.json({ message: "User not found" }, { status: 500 });
 		}
 
-		// PRISMA: const count = await prisma.user.count({ where: { OR: [...] } });
 		const [countResult] = await db.select({ value: count() }).from(users).where(
 			sql`(CAST(${users.totalRewards} AS NUMERIC) > CAST(${user.totalRewards} AS NUMERIC))
 			OR (CAST(${users.totalRewards} AS NUMERIC) = CAST(${user.totalRewards} AS NUMERIC) AND ${users.createdAt} < ${user.createdAt})`,

@@ -10,7 +10,6 @@ import {
 	stakingPositions,
 } from "./schema";
 
-// Inferred row types (replaces @prisma/client imports like `User`, `Task`, etc.)
 export type User = InferSelectModel<typeof users>;
 export type Task = InferSelectModel<typeof tasks>;
 export type TaskCompletion = InferSelectModel<typeof taskCompletions>;

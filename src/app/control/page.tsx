@@ -38,7 +38,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import axios, { AxiosError } from "axios";
-// PRISMA: import { StakingPool, PoolName, PoolCategory, StakingPosition } from "@prisma/client";
 import { PoolName, PoolCategory } from "@/db/types";
 import type { StakingPool, StakingPosition } from "@/db/types";
 import { CreatePoolDTO } from "@/lib/types";

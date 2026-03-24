@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-// PRISMA: import { prisma } from "@/lib/prisma";
 import { db } from "@/db/drizzle";
 import { rewards } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
@@ -13,7 +12,6 @@ export async function GET(req: Request) {
 	}
 
 	try {
-		// PRISMA: const rewards = await prisma.reward.findMany({ where: { userId }, include: { task: true }, orderBy: { createdAt: "desc" }, take: 10 });
 		const rewardsData = await db.query.rewards.findMany({
 			where: eq(rewards.userId, userId),
 			with: { task: true },

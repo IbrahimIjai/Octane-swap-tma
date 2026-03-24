@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-// PRISMA: import { prisma } from "@/lib/prisma";
 import { db } from "@/db/drizzle";
 import { tasks, taskCompletions, rewards } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -19,7 +18,6 @@ export async function POST(req: Request) {
 		);
 	}
 
-	// PRISMA: const task = await prisma.task.findUnique({ where: { id: taskId }, include: { completions: { where: { userId } } } });
 	const task = await db.query.tasks.findFirst({
 		where: eq(tasks.id, taskId),
 		with: {
@@ -79,7 +77,6 @@ export async function POST(req: Request) {
 			);
 		}
 
-		// PRISMA: const taskCompletion = await prisma.taskCompletion.findUnique({ where: { userId_taskId: { userId, taskId } } });
 		const taskCompletion = await db.query.taskCompletions.findFirst({
 			where: and(
 				eq(taskCompletions.userId, userId),
@@ -101,7 +98,6 @@ export async function POST(req: Request) {
 			);
 		}
 
-		// PRISMA: await prisma.$transaction(async (prisma) => { ... });
 		await db
 			.insert(taskCompletions)
 			.values({

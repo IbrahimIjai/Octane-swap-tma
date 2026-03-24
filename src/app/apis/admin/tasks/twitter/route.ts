@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server";
-// PRISMA: import { prisma } from "@/lib/prisma";
-// PRISMA: import { TaskType } from "@prisma/client";
 import { db } from "@/db/drizzle";
 import { tasks, taskCompletions, rewards, users } from "@/db/schema";
 import { eq, and, inArray, sql } from "drizzle-orm";
@@ -12,7 +10,6 @@ export async function GET(req: Request) {
 	const { searchParams } = new URL(req.url);
 	const filter = searchParams.get("filter") as TaskType | "ALL" | null;
 
-	// PRISMA: const twitterTasks = await prisma.task.findMany({ where: whereClause, include: { completions: { include: { user: { select: { id: true, twitterUsername: true } } } } } });
 	let twitterTasks;
 
 	if (filter && filter !== "ALL") {
@@ -52,7 +49,6 @@ export async function POST(req: Request) {
 			return NextResponse.json({ error: "Invalid status" }, { status: 400 });
 		}
 
-		// PRISMA: const task = await prisma.task.findUnique({ where: { id: taskId } });
 		const task = await db.query.tasks.findFirst({
 			where: eq(tasks.id, taskId),
 		});
@@ -62,7 +58,6 @@ export async function POST(req: Request) {
 		}
 
 		if (modeVedict === "FAILED") {
-			// PRISMA: await prisma.taskCompletion.update({ where: { userId_taskId: { userId, taskId } }, data: { status: modeVedict } });
 			await db
 				.update(taskCompletions)
 				.set({ status: modeVedict })
@@ -73,7 +68,6 @@ export async function POST(req: Request) {
 					),
 				);
 		} else if (modeVedict === "COMPLETED") {
-			// PRISMA: await prisma.taskCompletion.update(...)
 			await db
 				.update(taskCompletions)
 				.set({
@@ -87,13 +81,11 @@ export async function POST(req: Request) {
 					),
 				);
 
-			// PRISMA: const reward = await prisma.reward.findUnique({ where: { userId_taskId: { userId, taskId } } });
 			const reward = await db.query.rewards.findFirst({
 				where: and(eq(rewards.userId, userId), eq(rewards.taskId, taskId)),
 			});
 
 			if (!reward) {
-				// PRISMA: await prisma.$transaction([prisma.reward.create(...), prisma.user.update(...)]);
 				await db.insert(rewards).values({
 					id: randomUUID(),
 					userId,

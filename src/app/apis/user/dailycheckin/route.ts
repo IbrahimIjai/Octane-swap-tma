@@ -1,7 +1,5 @@
 // pages/api/user/route.ts
 import { NextRequest, NextResponse } from "next/server";
-// PRISMA: import { prisma } from "@/lib/prisma";
-// PRISMA: import { Prisma } from "@prisma/client";
 import { db } from "@/db/drizzle";
 import { users, dailyTaskReset, rewards } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
@@ -18,7 +16,6 @@ export async function GET(request: NextRequest) {
 	}
 
 	try {
-		// PRISMA: const dailyTaskReset = await prisma.dailyTaskReset.findUnique({ where: { userId } });
 		const dailyTaskResetRow = await db.query.dailyTaskReset.findFirst({
 			where: eq(dailyTaskReset.userId, userId),
 		});
@@ -60,7 +57,6 @@ export async function POST(req: NextRequest) {
 
 		const dailyCheckInReward = 5;
 
-		// PRISMA: const updatedUser = await prisma.$transaction(async (tx) => { ... });
 
 		const dailyTaskResetRow = await db.query.dailyTaskReset.findFirst({
 			where: eq(dailyTaskReset.userId, userId),

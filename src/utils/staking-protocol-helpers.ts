@@ -1,6 +1,3 @@
-// PRISMA: import { prisma } from "@/lib/prisma";
-// PRISMA: import { Prisma, StakingPool, StakingPosition } from "@prisma/client";
-// PRISMA: const { Decimal } = Prisma;
 import { db } from "@/db/drizzle";
 import { stakingPools, stakingPositions } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -59,7 +56,6 @@ export class StakingCalculator {
 	}
 
 	static async updateReward(userId: string, poolId: string) {
-		// PRISMA: const pool = await prisma.stakingPool.findUnique({ where: { id: poolId }, include: { positions: { where: { userId } } } });
 		const pool = await db.query.stakingPools.findFirst({
 			where: eq(stakingPools.id, poolId),
 			with: { positions: true },
@@ -90,7 +86,6 @@ export class StakingCalculator {
 
 		// Update pool
 		console.log("Updating staking pool with rewardspertoken stored....");
-		// PRISMA: await prisma.stakingPool.update({ where: { id: poolId }, data: { rewardPerTokenStored, lastUpdateTime: new Date() } });
 		await db
 			.update(stakingPools)
 			.set({
@@ -103,7 +98,6 @@ export class StakingCalculator {
 
 		if (position) {
 			console.log("done1");
-			// PRISMA: await prisma.stakingPosition.update({ where: { id: position.id }, data: { rewards: earned, rewardPerTokenPaid: rewardPerTokenStored, lastUpdateTime: new Date() } });
 			await db
 				.update(stakingPositions)
 				.set({
@@ -125,7 +119,6 @@ export class StakingCalculator {
 
 export class poolInfo {
 	static async getPools() {
-		// PRISMA: const pools = await prisma.stakingPool.findMany({ orderBy: { startTime: "desc" }, select: { ... } });
 		const pools = await db.query.stakingPools.findMany({
 			orderBy: (stakingPools, { desc }) => [desc(stakingPools.startTime)],
 			columns: {

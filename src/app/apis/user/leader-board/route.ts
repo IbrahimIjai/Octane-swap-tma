@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-// PRISMA: import { prisma } from "@/lib/prisma";
 import { db } from "@/db/drizzle";
 import { users } from "@/db/schema";
 import { desc, count, sql } from "drizzle-orm";
@@ -24,7 +23,6 @@ export async function GET(req: NextRequest) {
 	}
 
 	try {
-		// PRISMA: prisma.$queryRaw for RANK() OVER
 		const userRank = await db.execute<LeaderboardEntry>(sql`
 			SELECT
 				id,
@@ -82,7 +80,6 @@ export async function GET(req: NextRequest) {
 					: undefined,
 		}));
 
-		// PRISMA: const _newtopUsers = await prisma.user.findMany({ ... })
 		const _newtopUsers = await db.query.users.findMany({
 			orderBy: desc(users.totalRewards),
 			columns: {
@@ -95,7 +92,6 @@ export async function GET(req: NextRequest) {
 
 		console.log({ _newtopUsers, currentUser, topUsers: topUsersWithMedals });
 
-		// PRISMA: totalUsers: await prisma.user.count()
 		const [totalUsersResult] = await db.select({ value: count() }).from(users);
 
 		return NextResponse.json({

@@ -5,7 +5,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { initData, sendData } from "@telegram-apps/sdk-react";
 import { useIsMounted } from "connectkit";
 import axios from "axios";
-// PRISMA: import { User } from "@prisma/client";
 import type { User } from "@/db/types";
 import { useRouter } from "next/navigation";
 import { useToast } from "../use-toast";

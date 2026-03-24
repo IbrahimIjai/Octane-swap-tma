@@ -1,7 +1,5 @@
 // app/api/pools/route.ts
 import { NextResponse } from "next/server";
-// PRISMA: import { prisma } from "@/lib/prisma";
-// PRISMA: import { PoolCategory, PoolName, Prisma } from "@prisma/client";
 import { db } from "@/db/drizzle";
 import { stakingPools } from "@/db/schema";
 import { desc } from "drizzle-orm";
@@ -31,7 +29,6 @@ const createPoolSchema = z.object({
 
 export async function GET() {
 	try {
-		// PRISMA: const pools = await prisma.stakingPool.findMany({ orderBy: { createdAt: "desc" }, include: { positions: true } });
 		const pools = await db.query.stakingPools.findMany({
 			orderBy: desc(stakingPools.createdAt),
 			with: { positions: true },
@@ -60,7 +57,6 @@ export async function POST(req: Request) {
 
 		const calculatedRewardRate = rewardAmount / durationInSeconds;
 
-		// PRISMA: const pool = await prisma.stakingPool.create({ data: { ... } });
 		const [pool] = await db
 			.insert(stakingPools)
 			.values({

@@ -1,7 +1,5 @@
 // pages/api/user/route.ts
 import { NextRequest, NextResponse } from "next/server";
-// PRISMA: import { prisma } from "@/lib/prisma";
-// PRISMA: import { Prisma } from "@prisma/client";
 import { db } from "@/db/drizzle";
 import { users, referrals, rewards } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
@@ -20,10 +18,6 @@ export async function GET(req: NextRequest) {
 	}
 
 	try {
-		// PRISMA: const user = await prisma.user.findUnique({
-		// PRISMA: 	where: { telegramId },
-		// PRISMA: 	include: { StakingPositions: { include: { pool: true } }, TaskCompletions: { include: { task: true } }, Rewards: { include: { task: true } } },
-		// PRISMA: });
 		const user = await db.query.users.findFirst({
 			where: eq(users.telegramId, telegramId),
 			with: {
@@ -62,7 +56,6 @@ export async function POST(req: NextRequest) {
 
 		const telegramAgeOCTRewards = calculateTelegramAgeReward(telegramId);
 
-		// PRISMA: const user = await prisma.$transaction(async (tx) => { ... });
 		// Drizzle neon-http doesn't support interactive transactions,
 		// so we run sequential queries. For atomicity you'd use neon-serverless (ws).
 		let referrer = null;

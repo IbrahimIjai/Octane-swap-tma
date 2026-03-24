@@ -1,5 +1,3 @@
-// PRISMA: import { PoolCategory, PoolName } from "@prisma/client";
-// PRISMA: import { JsonArray } from "@prisma/client/runtime/library";
 import type { PoolCategory, PoolName } from "@/db/types";
 
 export interface StakingPool {

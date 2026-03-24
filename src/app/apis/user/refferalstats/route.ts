@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-// PRISMA: import { prisma } from "@/lib/prisma";
 import { db } from "@/db/drizzle";
 import { users, referrals, rewards } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -13,7 +12,6 @@ export async function GET(req: Request) {
 	}
 
 	try {
-		// PRISMA: const user = await prisma.user.findUnique({ where: { id: userId }, include: { referrals: true, Rewards: { where: { type: "REFERRAL" } } } });
 		const user = await db.query.users.findFirst({
 			where: eq(users.id, userId),
 			with: {

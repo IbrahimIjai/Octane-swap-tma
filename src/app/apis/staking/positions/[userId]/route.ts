@@ -1,4 +1,3 @@
-// PRISMA: import { prisma } from "@/lib/prisma";
 import { db } from "@/db/drizzle";
 import { stakingPools, stakingPositions } from "@/db/schema";
 import { eq, and, lte, gt, desc } from "drizzle-orm";
@@ -10,7 +9,6 @@ export async function GET(
 	{ params }: { params: { userId: string } },
 ) {
 	try {
-		// PRISMA: const latestPool = await prisma.stakingPool.findFirst({ where: { startTime: { lte: new Date() }, endTime: { gt: new Date() } }, orderBy: { startTime: "desc" } });
 		const latestPool = await db.query.stakingPools.findFirst({
 			where: and(
 				lte(stakingPools.startTime, new Date()),
@@ -27,7 +25,6 @@ export async function GET(
 		await StakingCalculator.updateReward(params.userId, latestPool?.id);
 		console.log("....updated current pool");
 
-		// PRISMA: const positions = await prisma.stakingPosition.findMany({ where: { userId: params.userId }, include: { pool: true } });
 		const positions = await db.query.stakingPositions.findMany({
 			where: eq(stakingPositions.userId, params.userId),
 			with: { pool: true },
