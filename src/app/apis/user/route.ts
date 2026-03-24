@@ -1,13 +1,14 @@
 // pages/api/user/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+// PRISMA: import { prisma } from "@/lib/prisma";
+// PRISMA: import { Prisma } from "@prisma/client";
+import { db } from "@/db/drizzle";
+import { users, referrals, rewards } from "@/db/schema";
+import { eq, sql } from "drizzle-orm";
 import { calculateTelegramAgeReward } from "@/lib/utils";
-import { Prisma } from "@prisma/client";
+import { randomUUID } from "crypto";
 
-// const { Decimal } = Prisma;
 export async function GET(req: NextRequest) {
-	// await corsMiddleware(req, NextResponse);
-
 	const { searchParams } = new URL(req.url);
 	const telegramId = searchParams.get("telegramId");
 
@@ -19,26 +20,16 @@ export async function GET(req: NextRequest) {
 	}
 
 	try {
-		const user = await prisma.user.findUnique({
-			where: { telegramId },
-			include: {
-				StakingPositions: {
-					include: {
-						pool: true,
-					},
-				},
-
-				TaskCompletions: {
-					include: {
-						task: true,
-					},
-				},
-
-				Rewards: {
-					include: {
-						task: true,
-					},
-				},
+		// PRISMA: const user = await prisma.user.findUnique({
+		// PRISMA: 	where: { telegramId },
+		// PRISMA: 	include: { StakingPositions: { include: { pool: true } }, TaskCompletions: { include: { task: true } }, Rewards: { include: { task: true } } },
+		// PRISMA: });
+		const user = await db.query.users.findFirst({
+			where: eq(users.telegramId, telegramId),
+			with: {
+				StakingPositions: { with: { pool: true } },
+				TaskCompletions: { with: { task: true } },
+				Rewards: { with: { task: true } },
 			},
 		});
 
@@ -71,61 +62,66 @@ export async function POST(req: NextRequest) {
 
 		const telegramAgeOCTRewards = calculateTelegramAgeReward(telegramId);
 
-		const user = await prisma.$transaction(async (tx) => {
-			let referrer = null;
+		// PRISMA: const user = await prisma.$transaction(async (tx) => { ... });
+		// Drizzle neon-http doesn't support interactive transactions,
+		// so we run sequential queries. For atomicity you'd use neon-serverless (ws).
+		let referrer = null;
 
-			if (referralCode) {
-				referrer = await tx.user.findUnique({ where: { referralCode } });
-			}
+		if (referralCode) {
+			referrer = await db.query.users.findFirst({
+				where: eq(users.referralCode, referralCode),
+			});
+		}
 
-			const newUser = await tx.user.create({
-				data: {
-					telegramId,
-					telegramUsername,
-				},
+		const newUserId = randomUUID();
+		const [newUser] = await db
+			.insert(users)
+			.values({
+				id: newUserId,
+				telegramId,
+				telegramUsername,
+			})
+			.returning();
+
+		if (referrer) {
+			console.log({ referrerCode: referrer.referralCode });
+			await db.insert(referrals).values({
+				id: randomUUID(),
+				referrerId: referrer.id,
+				referredId: newUser.id,
+			});
+			const referralReward = 10;
+
+			await db.insert(rewards).values({
+				id: randomUUID(),
+				userId: referrer.id,
+				amount: String(referralReward),
+				type: "REFERRAL",
 			});
 
-			if (referrer) {
-				console.log({ referrerCode: referrer.referralCode });
-				await tx.referral.create({
-					data: {
-						referrerId: referrer.id,
-						referredId: newUser.id,
-					},
-				});
-				const referralReward = 10;
+			await db
+				.update(users)
+				.set({
+					totalRewards: sql`CAST(${users.totalRewards} AS NUMERIC) + ${referralReward}`,
+				})
+				.where(eq(users.id, referrer.id));
+		}
 
-				await tx.reward.create({
-					data: {
-						userId: referrer.id,
-						amount: referralReward,
-						type: "REFERRAL",
-					},
-				});
-
-				await tx.user.update({
-					where: { id: referrer.id },
-					data: { totalRewards: { increment: referralReward } },
-				});
-			}
-
-			await tx.reward.create({
-				data: {
-					userId: newUser.id,
-					amount: telegramAgeOCTRewards,
-					type: "WELCOME",
-				},
-			});
-
-			await tx.user.update({
-				where: { id: newUser.id },
-				data: { totalRewards: { increment: telegramAgeOCTRewards } },
-			});
-
-			return newUser;
+		await db.insert(rewards).values({
+			id: randomUUID(),
+			userId: newUser.id,
+			amount: String(telegramAgeOCTRewards),
+			type: "WELCOME",
 		});
 
-		return NextResponse.json(user, { status: 200 });
+		await db
+			.update(users)
+			.set({
+				totalRewards: sql`CAST(${users.totalRewards} AS NUMERIC) + ${telegramAgeOCTRewards}`,
+			})
+			.where(eq(users.id, newUser.id));
+
+		return NextResponse.json(newUser, { status: 200 });
 	} catch (error) {
 		console.error("Error creating user:", error);
 		return NextResponse.json(

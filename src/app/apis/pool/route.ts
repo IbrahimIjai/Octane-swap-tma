@@ -1,14 +1,29 @@
 // app/api/pools/route.ts
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+// PRISMA: import { prisma } from "@/lib/prisma";
+// PRISMA: import { PoolCategory, PoolName, Prisma } from "@prisma/client";
+import { db } from "@/db/drizzle";
+import { stakingPools } from "@/db/schema";
+import { desc } from "drizzle-orm";
 import { z } from "zod";
-import { PoolCategory, PoolName, Prisma } from "@prisma/client";
+import { randomUUID } from "crypto";
 
-const { Decimal } = Prisma;
+const poolNameValues = [
+	"NITRO_BOOST", "TURBO_CHARGE", "SUPERSONIC_STAKE", "DRAG_RACE_REWARDS",
+	"OCTANE_OVERDRIVE", "FUEL_INJECTION", "PIT_STOP_PROFITS", "VELOCITY_VAULT",
+	"IGNITION", "COMBUSTION_CHAMBER", "HIGH_OCTANE_REWARDS", "FUEL_CELL_FRENZY",
+	"CATALYST_CONVERTER", "THERMAL_THRUST", "POWER_SURGE", "ROCKET_TO_THE_MOON",
+	"DIAMOND_HANDS_VAULT", "HODL_HORSEPOWER", "DEGEN_DRAG_RACE", "MEME_MOMENTUM",
+	"BULL_RUN_BOOSTER", "WHALE_WATCHER_REWARDS", "CRYPTO_COMBUSTION", "MEME_MACHINE_NITRO",
+	"BLOCKCHAIN_BURNOUT", "DEFI_DRIFT", "TOKEN_TURBO_BOOST", "NFT_NITROUS_OXIDE",
+	"SMART_CONTRACT_SPEEDWAY",
+] as const;
+
+const poolCategoryValues = ["SPEED", "COMBUSTION", "CRYPTO", "HYBRID"] as const;
 
 const createPoolSchema = z.object({
-	poolName: z.nativeEnum(PoolName),
-	category: z.nativeEnum(PoolCategory),
+	poolName: z.enum(poolNameValues),
+	category: z.enum(poolCategoryValues),
 	rewardAmount: z.number().positive(),
 	startTime: z.string().datetime(),
 	endTime: z.string().datetime(),
@@ -16,13 +31,10 @@ const createPoolSchema = z.object({
 
 export async function GET() {
 	try {
-		const pools = await prisma.stakingPool.findMany({
-			orderBy: {
-				createdAt: "desc",
-			},
-			include: {
-				positions: true,
-			},
+		// PRISMA: const pools = await prisma.stakingPool.findMany({ orderBy: { createdAt: "desc" }, include: { positions: true } });
+		const pools = await db.query.stakingPools.findMany({
+			orderBy: desc(stakingPools.createdAt),
+			with: { positions: true },
 		});
 
 		return NextResponse.json(pools);
@@ -40,32 +52,32 @@ export async function POST(req: Request) {
 		const body = await req.json();
 		const validatedData = createPoolSchema.parse(body);
 		console.log({ body });
-		const { poolName, category, rewardAmount, startTime, endTime } =
-			validatedData;
+		const { poolName, category, rewardAmount, startTime, endTime } = validatedData;
 
 		const startDate = new Date(startTime);
 		const endDate = new Date(endTime);
 		const durationInSeconds = (endDate.getTime() - startDate.getTime()) / 1000;
 
-		const calculatedRewardRate = new Decimal(rewardAmount).div(
-			durationInSeconds,
-		);
+		const calculatedRewardRate = rewardAmount / durationInSeconds;
 
-		const pool = await prisma.stakingPool.create({
-			data: {
+		// PRISMA: const pool = await prisma.stakingPool.create({ data: { ... } });
+		const [pool] = await db
+			.insert(stakingPools)
+			.values({
+				id: randomUUID(),
 				poolName,
 				category,
-				rewardAmount: new Decimal(rewardAmount),
-				rewardRate: calculatedRewardRate,
+				rewardAmount: String(rewardAmount),
+				rewardRate: String(calculatedRewardRate),
 				startTime: startDate,
 				endTime: endDate,
 				lastUpdateTime: startDate,
-				rewardsDuration: new Decimal(durationInSeconds),
-				periodFinish: new Decimal(durationInSeconds),
-				totalSupply: new Decimal(0),
-				rewardPerTokenStored: new Decimal(0),
-			},
-		});
+				rewardsDuration: String(durationInSeconds),
+				periodFinish: String(durationInSeconds),
+				totalSupply: "0",
+				rewardPerTokenStored: "0",
+			})
+			.returning();
 
 		return NextResponse.json(pool);
 	} catch (error) {

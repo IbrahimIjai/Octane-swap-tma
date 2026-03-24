@@ -2,10 +2,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { useToast } from "../use-toast";
-import { Prisma, StakingPool, StakingPosition, User } from "@prisma/client";
+// PRISMA: import { Prisma, StakingPool, StakingPosition, User } from "@prisma/client";
+import type { StakingPool, StakingPosition, User } from "@/db/types";
 import { SECONDS_PER_YEAR } from "@/lib/config";
-
-const { Decimal } = Prisma;
 // Types
 interface PoolWithPosition extends StakingPool {
 	positions: StakingPosition[];
@@ -71,14 +70,13 @@ export const useStakingProtocol = (userId?: string) => {
 
 		// Calculate total rewards minted from all positions
 		const totalRewardsMinted = pool.positions.reduce(
-			(sum, position) => sum.plus(position.rewards),
-			new Decimal(0),
+			(sum, position) => sum + Number(position.rewards),
+			0,
 		);
 
 		// Calculate progress percentage
-		const progressPercentage = Number(
-			totalRewardsMinted.div(pool.rewardAmount).times(100),
-		);
+		const progressPercentage =
+			(totalRewardsMinted / Number(pool.rewardAmount)) * 100;
 		const totalStaked =
 			pool.positions.reduce(
 				(total, position) => total + Number(position.amount),
@@ -104,7 +102,7 @@ export const useStakingProtocol = (userId?: string) => {
 		pool: PoolWithPosition,
 		userId: string,
 	) => {
-		if (!pool || !userId) return new Decimal(0);
+		if (!pool || !userId) return 0;
 
 		const userPosition = pool.positions.find((pos) => pos.userId === userId);
 		if (!userPosition || Number(pool.totalSupply) === 0) return 0;
@@ -137,19 +135,19 @@ export const useStakingProtocol = (userId?: string) => {
 	const userRewardPerSecond =
 		currentPool && userId
 			? calculateUserRewardPerSecond(currentPool, userId)
-			: new Decimal(0);
+			: 0;
 
 	// Calculate APR for current pool
 	const calculatePoolAPR = (pool: PoolWithPosition): number => {
-		if (!pool || new Decimal(pool?.totalSupply).equals(0)) {
+		if (!pool || Number(pool?.totalSupply) === 0) {
 			return 0;
 		}
 
-		const SECONDS_PER_YEAR = new Decimal(31536000);
-		const rewardsPerYear = new Decimal(pool.rewardRate).mul(SECONDS_PER_YEAR);
-		const apr = rewardsPerYear.div(pool.totalSupply).mul(100);
+		const SECONDS_PER_YEAR_NUM = 31536000;
+		const rewardsPerYear = Number(pool.rewardRate) * SECONDS_PER_YEAR_NUM;
+		const apr = (rewardsPerYear / Number(pool.totalSupply)) * 100;
 
-		return Number(apr);
+		return apr;
 	};
 
 	// Calculate user-specific APR
@@ -157,7 +155,7 @@ export const useStakingProtocol = (userId?: string) => {
 		if (!pool || !userId) return 0;
 
 		const userPosition = pool.positions.find((pos) => pos.userId === userId);
-		if (!userPosition || new Decimal(pool?.totalSupply).equals(0)) return 0;
+		if (!userPosition || Number(pool?.totalSupply) === 0) return 0;
 
 		const userShare = Number(userPosition?.amount) / Number(pool.totalSupply);
 

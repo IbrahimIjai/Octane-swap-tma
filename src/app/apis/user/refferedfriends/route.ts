@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+// PRISMA: import { prisma } from "@/lib/prisma";
+import { db } from "@/db/drizzle";
+import { referrals, users } from "@/db/schema";
+import { eq, desc } from "drizzle-orm";
 
 export async function GET(req: Request) {
 	const { searchParams } = new URL(req.url);
@@ -10,19 +13,20 @@ export async function GET(req: Request) {
 	}
 
 	try {
-		const referrals = await prisma.referral.findMany({
-			where: { referrerId: userId },
-			include: {
-				referred: {
-					select: {
-						telegramId: true,
-					},
-				},
+		// PRISMA: const referrals = await prisma.referral.findMany({
+		// PRISMA:   where: { referrerId: userId },
+		// PRISMA:   include: { referred: { select: { telegramId: true } } },
+		// PRISMA:   orderBy: { createdAt: "desc" },
+		// PRISMA: });
+		const referralResults = await db.query.referrals.findMany({
+			where: eq(referrals.referrerId, userId),
+			with: {
+				referred: true,
 			},
-			orderBy: { createdAt: "desc" },
+			orderBy: desc(referrals.createdAt),
 		});
 
-		const referredFriends = referrals.map((referral) => ({
+		const referredFriends = referralResults.map((referral) => ({
 			id: referral.id,
 			telegramId: referral.referred.telegramId,
 			createdAt: referral.createdAt,

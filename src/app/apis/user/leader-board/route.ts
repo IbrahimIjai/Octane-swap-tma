@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+// PRISMA: import { prisma } from "@/lib/prisma";
+import { db } from "@/db/drizzle";
+import { users } from "@/db/schema";
+import { desc, count, sql } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
@@ -21,41 +24,38 @@ export async function GET(req: NextRequest) {
 	}
 
 	try {
-		const [userRank, topUsers] = await Promise.all([
-			prisma.$queryRaw<LeaderboardEntry[]>`
-        SELECT 
-          id, 
-          "telegramUsername" as username, 
-          "totalRewards" as score, 
-          RANK () OVER (ORDER BY "totalRewards" DESC) as rank
-        FROM "User"
-        WHERE id = ${userId}
-      `,
-			prisma.$queryRaw<LeaderboardEntry[]>`
-        SELECT 
-          id, 
-          "telegramUsername" as username, 
-          "totalRewards" as score, 
-          DENSE_RANK() OVER (ORDER BY "totalRewards" DESC) as rank
-        FROM "User"
-        ORDER BY "totalRewards" DESC
-        LIMIT 100
-      `,
-		]);
+		// PRISMA: prisma.$queryRaw for RANK() OVER
+		const userRank = await db.execute<LeaderboardEntry>(sql`
+			SELECT
+				id,
+				telegram_username as username,
+				total_rewards as score,
+				RANK() OVER (ORDER BY CAST(total_rewards AS NUMERIC) DESC) as rank
+			FROM users
+			WHERE id = ${userId}
+		`);
 
-		console.log({ userRank, topUsers });
+		const topUsersRaw = await db.execute<LeaderboardEntry>(sql`
+			SELECT
+				id,
+				telegram_username as username,
+				total_rewards as score,
+				DENSE_RANK() OVER (ORDER BY CAST(total_rewards AS NUMERIC) DESC) as rank
+			FROM users
+			ORDER BY CAST(total_rewards AS NUMERIC) DESC
+			LIMIT 100
+		`);
 
-		const _userRank = userRank.map((entry, i) => ({
+		const _userRank = (userRank.rows ?? userRank).map((entry: any) => ({
 			...entry,
-			rank: Number(entry.rank), // Convert BigInt to Number
+			rank: Number(entry.rank),
 		}));
 
-		const _topUsers = topUsers.map((entry, i) => ({
+		const _topUsers = (topUsersRaw.rows ?? topUsersRaw).map((entry: any, i: number) => ({
 			...entry,
-			// rank: Number(entry.rank), // Convert BigInt to Number
 			rank: i + 1,
 		}));
-		
+
 		console.log({ _userRank, _topUsers });
 
 		if (_userRank.length === 0) {
@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
 					: undefined,
 		};
 
-		const topUsersWithMedals = _topUsers.map((user, I) => ({
+		const topUsersWithMedals = _topUsers.map((user: any, I: number) => ({
 			...user,
 			username: user.username || "Anonymous",
 			medal:
@@ -82,23 +82,26 @@ export async function GET(req: NextRequest) {
 					: undefined,
 		}));
 
-		const _newtopUsers = await prisma.user.findMany({
-			orderBy: {
-				totalRewards: "desc",
-			},
-			select: {
+		// PRISMA: const _newtopUsers = await prisma.user.findMany({ ... })
+		const _newtopUsers = await db.query.users.findMany({
+			orderBy: desc(users.totalRewards),
+			columns: {
 				id: true,
 				telegramId: true,
 				totalRewards: true,
 			},
-			take: 10,
+			limit: 10,
 		});
+
 		console.log({ _newtopUsers, currentUser, topUsers: topUsersWithMedals });
+
+		// PRISMA: totalUsers: await prisma.user.count()
+		const [totalUsersResult] = await db.select({ value: count() }).from(users);
 
 		return NextResponse.json({
 			currentUser,
 			topUsers: topUsersWithMedals,
-			totalUsers: await prisma.user.count(),
+			totalUsers: totalUsersResult.value,
 		});
 	} catch (error) {
 		console.error("Error fetching leaderboard:", error);

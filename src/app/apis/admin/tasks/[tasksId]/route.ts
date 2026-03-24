@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+// PRISMA: import { prisma } from "@/lib/prisma";
+import { db } from "@/db/drizzle";
+import { tasks } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 export async function PUT(
 	req: Request,
@@ -8,10 +11,12 @@ export async function PUT(
 	try {
 		const { taskId } = params;
 		const taskData = await req.json();
-		const updatedTask = await prisma.task.update({
-			where: { id: taskId },
-			data: taskData,
-		});
+		// PRISMA: const updatedTask = await prisma.task.update({ where: { id: taskId }, data: taskData });
+		const [updatedTask] = await db
+			.update(tasks)
+			.set(taskData)
+			.where(eq(tasks.id, taskId))
+			.returning();
 		return NextResponse.json(updatedTask);
 	} catch (error) {
 		console.error("Error updating task:", error);
@@ -28,9 +33,8 @@ export async function DELETE(
 ) {
 	try {
 		const { taskId } = params;
-		await prisma.task.delete({
-			where: { id: taskId },
-		});
+		// PRISMA: await prisma.task.delete({ where: { id: taskId } });
+		await db.delete(tasks).where(eq(tasks.id, taskId));
 		return NextResponse.json({ message: "Task deleted successfully" });
 	} catch (error) {
 		console.error("Error deleting task:", error);

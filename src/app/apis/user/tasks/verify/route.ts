@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+// PRISMA: import { prisma } from "@/lib/prisma";
+import { db } from "@/db/drizzle";
+import { tasks, taskCompletions, rewards } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
+import { randomUUID } from "crypto";
 import { verifyTelegramJoin, verifyTelegramUserBoast } from "@/lib/tg";
 import { addDays, startOfDay } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
@@ -15,9 +19,12 @@ export async function POST(req: Request) {
 		);
 	}
 
-	const task = await prisma.task.findUnique({
-		where: { id: taskId },
-		include: { completions: { where: { userId: userId } } },
+	// PRISMA: const task = await prisma.task.findUnique({ where: { id: taskId }, include: { completions: { where: { userId } } } });
+	const task = await db.query.tasks.findFirst({
+		where: eq(tasks.id, taskId),
+		with: {
+			completions: true,
+		},
 	});
 
 	if (!task) {
@@ -56,16 +63,15 @@ export async function POST(req: Request) {
 				{ status: 400 },
 			);
 		}
-		const taskCompletion = await prisma.taskCompletion.findUnique({
-			where: {
-				userId_taskId: {
-					userId,
-					taskId,
-				},
-			},
+
+		// PRISMA: const taskCompletion = await prisma.taskCompletion.findUnique({ where: { userId_taskId: { userId, taskId } } });
+		const taskCompletion = await db.query.taskCompletions.findFirst({
+			where: and(
+				eq(taskCompletions.userId, userId),
+				eq(taskCompletions.taskId, taskId),
+			),
 		});
-		
-		
+
 		if (
 			task.frequency === "DAILY" &&
 			taskCompletion?.completed &&
@@ -79,21 +85,28 @@ export async function POST(req: Request) {
 				{ status: 400 },
 			);
 		}
-		await prisma.$transaction(async (prisma) => {
-			await prisma.taskCompletion.upsert({
-				where: { userId_taskId: { userId, taskId } },
-				update: { status: "COMPLETED", completed: new Date() },
-				create: { userId, taskId, status: "COMPLETED", completed: new Date() },
+
+		// PRISMA: await prisma.$transaction(async (prisma) => { ... });
+		await db
+			.insert(taskCompletions)
+			.values({
+				id: randomUUID(),
+				userId,
+				taskId,
+				status: "COMPLETED",
+				completed: new Date(),
+			})
+			.onConflictDoUpdate({
+				target: [taskCompletions.userId, taskCompletions.taskId],
+				set: { status: "COMPLETED", completed: new Date() },
 			});
 
-			await prisma.reward.create({
-				data: {
-					userId,
-					taskId,
-					amount: task.points,
-					type: "TASK_COMPLETION",
-				},
-			});
+		await db.insert(rewards).values({
+			id: randomUUID(),
+			userId,
+			taskId,
+			amount: task.points,
+			type: "TASK_COMPLETION",
 		});
 
 		return NextResponse.json({

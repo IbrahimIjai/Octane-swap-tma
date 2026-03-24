@@ -1,72 +1,71 @@
-import { prisma } from "@/lib/prisma";
-import { Prisma, StakingPool, StakingPosition } from "@prisma/client";
-
-const { Decimal } = Prisma;
+// PRISMA: import { prisma } from "@/lib/prisma";
+// PRISMA: import { Prisma, StakingPool, StakingPosition } from "@prisma/client";
+// PRISMA: const { Decimal } = Prisma;
+import { db } from "@/db/drizzle";
+import { stakingPools, stakingPositions } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import type { StakingPool, StakingPosition } from "@/db/types";
 
 interface StakingPositionWithPool extends StakingPosition {
 	pool: StakingPool;
 }
+
 export class StakingCalculator {
-	static PRECISION = new Decimal("1e18");
+	static PRECISION = 1e18;
+
 	static async calculateRewardPerTokenStored(pool: StakingPool) {
 		console.log("in....");
-		if (!pool || pool.totalSupply.equals(0)) {
-			return pool.rewardPerTokenStored;
+		if (!pool || Number(pool.totalSupply) === 0) {
+			return Number(pool.rewardPerTokenStored ?? 0);
 		}
 
 		const lastTimeRewardApplicable = Math.min(
 			Date.now(),
-			pool.endTime.getTime(),
+			pool.endTime!.getTime(),
 		);
 
-		const timeDiff = new Decimal(
-			Math.max(lastTimeRewardApplicable - pool.lastUpdateTime.getTime(), 0),
-		).div(1000); // Convert to seconds
+		const timeDiff = Math.max(
+			lastTimeRewardApplicable - pool.lastUpdateTime!.getTime(),
+			0,
+		) / 1000;
 
-		const additionalReward = timeDiff
-			.mul(pool.rewardRate)
-			.mul(this.PRECISION)
-			.div(pool.totalSupply);
+		const additionalReward =
+			(timeDiff * Number(pool.rewardRate) * this.PRECISION) /
+			Number(pool.totalSupply);
 
 		console.log({
-			poolrewardsPerTokenstoredzzzzzz: Number(
-				pool.rewardPerTokenStored.add(additionalReward),
-			),
+			poolrewardsPerTokenstoredzzzzzz:
+				Number(pool.rewardPerTokenStored ?? 0) + additionalReward,
 		});
 
-		return pool.rewardPerTokenStored.add(additionalReward);
+		return Number(pool.rewardPerTokenStored ?? 0) + additionalReward;
 	}
 
-	// Replicates earned() from Synthetix
 	static async calculateEarned(position: StakingPositionWithPool) {
-		if (!position || position.amount.equals(0)) {
-			return new Decimal(0);
+		if (!position || Number(position.amount) === 0) {
+			return 0;
 		}
 
 		const rewardPerToken = await this.calculateRewardPerTokenStored(
 			position.pool,
 		);
-		const rewardDelta = rewardPerToken.sub(position.rewardPerTokenPaid);
+		const rewardDelta = rewardPerToken - Number(position.rewardPerTokenPaid ?? 0);
 
-		return position.amount
-			.mul(rewardDelta)
-			.div(this.PRECISION)
-			.add(position.rewards);
+		return (
+			(Number(position.amount) * rewardDelta) / this.PRECISION +
+			Number(position.rewards ?? 0)
+		);
 	}
 
-	// Replicates updateReward modifier functionality
 	static async updateReward(userId: string, poolId: string) {
-		const pool = await prisma.stakingPool.findUnique({
-			where: { id: poolId },
-			include: {
-				positions: {
-					where: { userId },
-				},
-			},
+		// PRISMA: const pool = await prisma.stakingPool.findUnique({ where: { id: poolId }, include: { positions: { where: { userId } } } });
+		const pool = await db.query.stakingPools.findFirst({
+			where: eq(stakingPools.id, poolId),
+			with: { positions: true },
 		});
 
 		if (!pool) {
-			console.log("DID NOT found pool andn position");
+			console.log("DID NOT found pool and position");
 			throw new Error("Pool and Position not found");
 		}
 
@@ -82,38 +81,36 @@ export class StakingCalculator {
 
 		const rewardPerTokenStored = await this.calculateRewardPerTokenStored(pool);
 
-		console.log({ rewardPerTokenStored: Number(rewardPerTokenStored) });
+		console.log({ rewardPerTokenStored });
 
 		const earned = await this.calculateEarned(
-			position as StakingPositionWithPool,
+			{ ...position, pool } as StakingPositionWithPool,
 		);
 
 		// Update pool
 		console.log("Updating staking pool with rewardspertoken stored....");
-		await prisma.stakingPool.update({
-			where: { id: poolId },
-			data: {
-				rewardPerTokenStored: new Decimal(rewardPerTokenStored).div(
-					this.PRECISION,
-				),
+		// PRISMA: await prisma.stakingPool.update({ where: { id: poolId }, data: { rewardPerTokenStored, lastUpdateTime: new Date() } });
+		await db
+			.update(stakingPools)
+			.set({
+				rewardPerTokenStored: String(rewardPerTokenStored / this.PRECISION),
 				lastUpdateTime: new Date(),
-			},
-		});
+			})
+			.where(eq(stakingPools.id, poolId));
 
-		console.log(
-			"Finished....Updating staking pool with rewardspertoken stored....",
-		);
+		console.log("Finished....Updating staking pool with rewardspertoken stored....");
 
 		if (position) {
 			console.log("done1");
-			await prisma.stakingPosition.update({
-				where: { id: position.id },
-				data: {
-					rewards: earned,
-					rewardPerTokenPaid: rewardPerTokenStored,
+			// PRISMA: await prisma.stakingPosition.update({ where: { id: position.id }, data: { rewards: earned, rewardPerTokenPaid: rewardPerTokenStored, lastUpdateTime: new Date() } });
+			await db
+				.update(stakingPositions)
+				.set({
+					rewards: String(earned),
+					rewardPerTokenPaid: String(rewardPerTokenStored),
 					lastUpdateTime: new Date(),
-				},
-			});
+				})
+				.where(eq(stakingPositions.id, position.id));
 			console.log("done22");
 		}
 
@@ -121,18 +118,16 @@ export class StakingCalculator {
 			pool,
 			position,
 			rewardPerTokenStored,
-			// lastTimeRewardApplicable,
 		};
 	}
 }
 
 export class poolInfo {
 	static async getPools() {
-		const pools = await prisma.stakingPool.findMany({
-			orderBy: {
-				startTime: "desc",
-			},
-			select: {
+		// PRISMA: const pools = await prisma.stakingPool.findMany({ orderBy: { startTime: "desc" }, select: { ... } });
+		const pools = await db.query.stakingPools.findMany({
+			orderBy: (stakingPools, { desc }) => [desc(stakingPools.startTime)],
+			columns: {
 				id: true,
 				totalSupply: true,
 				rewardRate: true,

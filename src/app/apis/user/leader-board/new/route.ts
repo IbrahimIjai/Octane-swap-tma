@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+// PRISMA: import { prisma } from "@/lib/prisma";
+import { db } from "@/db/drizzle";
+import { users } from "@/db/schema";
+import { eq, desc, asc, gt, and, lt, count, sql } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
@@ -21,29 +24,28 @@ export async function GET(req: NextRequest) {
 	}
 
 	try {
-		const topUsers = await prisma.user.findMany({
-			orderBy: [{ totalRewards: "desc" }, { createdAt: "asc" }],
-			take: 100,
+		// PRISMA: const topUsers = await prisma.user.findMany({ orderBy: [{ totalRewards: "desc" }, { createdAt: "asc" }], take: 100 });
+		const topUsers = await db.query.users.findMany({
+			orderBy: [desc(users.totalRewards), asc(users.createdAt)],
+			limit: 100,
 		});
-		const user = await prisma.user.findUnique({ where: { id: userId } });
+
+		// PRISMA: const user = await prisma.user.findUnique({ where: { id: userId } });
+		const user = await db.query.users.findFirst({
+			where: eq(users.id, userId),
+		});
+
 		if (!user) {
 			return NextResponse.json({ message: "User not found" }, { status: 500 });
 		}
-		const count = await prisma.user.count({
-			where: {
-				OR: [
-					{ totalRewards: { gt: user.totalRewards } },
-					{
-						AND: [
-							{ totalRewards: { equals: user.totalRewards } },
-							{ createdAt: { lt: user.createdAt } },
-						],
-					},
-				],
-			},
-		});
 
-		return NextResponse.json({ topUsers, count: count + 1 });
+		// PRISMA: const count = await prisma.user.count({ where: { OR: [...] } });
+		const [countResult] = await db.select({ value: count() }).from(users).where(
+			sql`(CAST(${users.totalRewards} AS NUMERIC) > CAST(${user.totalRewards} AS NUMERIC))
+			OR (CAST(${users.totalRewards} AS NUMERIC) = CAST(${user.totalRewards} AS NUMERIC) AND ${users.createdAt} < ${user.createdAt})`,
+		);
+
+		return NextResponse.json({ topUsers, count: (countResult?.value ?? 0) + 1 });
 	} catch (error) {
 		console.error("Error fetching leaderboard:", error);
 		return NextResponse.json(

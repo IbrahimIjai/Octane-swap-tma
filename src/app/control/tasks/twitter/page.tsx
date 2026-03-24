@@ -24,7 +24,8 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { useTasks } from "@/hooks/api/useTasks";
-import { Task, TaskCompletion, TaskStatus, TaskType } from "@prisma/client";
+// PRISMA: import { Task, TaskCompletion, TaskStatus, TaskType } from "@prisma/client";
+import type { Task, TaskCompletion, TaskStatus, TaskType } from "@/db/types";
 
 type ExtendedTask = Task & {
 	completions: (TaskCompletion & {

@@ -1,10 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios, { AxiosError } from "axios";
 import { useToast } from "../use-toast";
-import { Task, TaskCompletion } from "@prisma/client";
+// PRISMA: import { Task, TaskCompletion } from "@prisma/client";
+import type { Task, TaskCompletion } from "@/db/types";
 import { openLink } from "@telegram-apps/sdk-react";
 import { ActionData } from "@/lib/types";
-import { JsonValue } from "@prisma/client/runtime/library";
+// PRISMA: import { JsonValue } from "@prisma/client/runtime/library";
+import type { JsonValue } from "@/lib/types";
 import { useEffect } from "react";
 
 interface TaskData {

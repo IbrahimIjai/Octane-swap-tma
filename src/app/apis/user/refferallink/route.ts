@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+// PRISMA: import { prisma } from "@/lib/prisma";
+import { db } from "@/db/drizzle";
+import { users } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { OCTANESWAP_BOT_LINK } from "@/lib/config";
 import crypto from "crypto";
 
@@ -14,9 +17,9 @@ export async function GET(req: Request) {
 	}
 
 	try {
-		const user = await prisma.user.findUnique({
-			where: { telegramId },
-			// select: { referralCode: true },
+		// PRISMA: const user = await prisma.user.findUnique({ where: { telegramId } });
+		const user = await db.query.users.findFirst({
+			where: eq(users.telegramId, telegramId),
 		});
 
 		console.log({ user });
@@ -34,10 +37,11 @@ export async function GET(req: Request) {
 
 			const referralIdGen = fullHash.slice(0, 8);
 			referralLink = `${OCTANESWAP_BOT_LINK}?startapp=${referralIdGen}`;
-			await prisma.user.update({
-				where: { id: user.id },
-				data: { referralCode: referralIdGen },
-			});
+			// PRISMA: await prisma.user.update({ where: { id: user.id }, data: { referralCode: referralIdGen } });
+			await db
+				.update(users)
+				.set({ referralCode: referralIdGen })
+				.where(eq(users.id, user.id));
 		}
 		console.log({ referralLink });
 

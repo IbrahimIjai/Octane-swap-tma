@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+// PRISMA: import { prisma } from "@/lib/prisma";
+import { db } from "@/db/drizzle";
+import { users } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 export async function GET(req: NextRequest) {
 	const { searchParams } = new URL(req.url);
@@ -9,27 +12,17 @@ export async function GET(req: NextRequest) {
 
 	console.log({ secretCode, twitterUsername, address });
 
-	// if (!secretCode) {
-	// 	return NextResponse.json(
-	// 		{ error: "At least one search parameter is required" },
-	// 		{ status: 400 },
-	// 	);
-	// }
-
 	try {
 		let user;
 		if (twitterUsername) {
-			user = await prisma.user.findUnique({
-				where: { twitterUsername },
-			});
+			// PRISMA: user = await prisma.user.findUnique({ where: { twitterUsername } });
+			user = await db.query.users.findFirst({ where: eq(users.twitterUsername, twitterUsername) });
 		} else if (address) {
-			user = await prisma.user.findUnique({
-				where: { address },
-			});
+			// PRISMA: user = await prisma.user.findUnique({ where: { address } });
+			user = await db.query.users.findFirst({ where: eq(users.address, address) });
 		} else if (secretCode) {
-			user = await prisma.user.findUnique({
-				where: { secretCode },
-			});
+			// PRISMA: user = await prisma.user.findUnique({ where: { secretCode } });
+			user = await db.query.users.findFirst({ where: eq(users.secretCode, secretCode) });
 		}
 
 		console.log({ user });
@@ -52,36 +45,25 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-	// const res = new NextResponse();
-	// const corsRes = corsMiddleware(req, res);
-
-	// if (req.method === "OPTIONS") {
-	// 	return corsRes;
-	// }
 	const body = await req.json();
-
 	console.log({ body });
 
 	const { secretCode, twitterUsername, walletAddress } = body;
 
 	if (!secretCode || !twitterUsername || !walletAddress) {
 		return NextResponse.json(
-			{
-				error: "Secret code, Twitter username, and wallet address are required",
-			},
+			{ error: "Secret code, Twitter username, and wallet address are required" },
 			{ status: 400 },
 		);
 	}
 
 	try {
-		const updatedUser = await prisma.user.update({
-			where: { secretCode },
-			data: {
-				twitterUsername,
-
-				address: walletAddress,
-			},
-		});
+		// PRISMA: const updatedUser = await prisma.user.update({ where: { secretCode }, data: { twitterUsername, address: walletAddress } });
+		const [updatedUser] = await db
+			.update(users)
+			.set({ twitterUsername, address: walletAddress })
+			.where(eq(users.secretCode, secretCode))
+			.returning();
 
 		return NextResponse.json({
 			user: updatedUser,

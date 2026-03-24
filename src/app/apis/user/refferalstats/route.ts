@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+// PRISMA: import { prisma } from "@/lib/prisma";
+import { db } from "@/db/drizzle";
+import { users, referrals, rewards } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 export async function GET(req: Request) {
 	const { searchParams } = new URL(req.url);
@@ -10,13 +13,12 @@ export async function GET(req: Request) {
 	}
 
 	try {
-		const user = await prisma.user.findUnique({
-			where: { id: userId },
-			include: {
+		// PRISMA: const user = await prisma.user.findUnique({ where: { id: userId }, include: { referrals: true, Rewards: { where: { type: "REFERRAL" } } } });
+		const user = await db.query.users.findFirst({
+			where: eq(users.id, userId),
+			with: {
 				referrals: true,
-				Rewards: {
-					where: { type: "REFERRAL" },
-				},
+				Rewards: true,
 			},
 		});
 
@@ -24,10 +26,12 @@ export async function GET(req: Request) {
 			return NextResponse.json({ error: "User not found" }, { status: 404 });
 		}
 
+		const referralRewards = user.Rewards.filter((r) => r.type === "REFERRAL");
+
 		const stats = {
 			activeReferrals: user.referrals.length,
 			totalInvites: user.referrals.length,
-			rewardsEarned: user.Rewards.reduce(
+			rewardsEarned: referralRewards.reduce(
 				(sum, reward) => sum + Number(reward.amount),
 				0,
 			),

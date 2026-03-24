@@ -1,14 +1,19 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+// PRISMA: import { prisma } from "@/lib/prisma";
+import { db } from "@/db/drizzle";
+import { users } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 export async function POST(req: Request) {
 	try {
 		const { secretCode, userId } = await req.json();
 
-		const user = await prisma.user.update({
-			where: { id: userId },
-			data: { secretCode },
-		});
+		// PRISMA: const user = await prisma.user.update({ where: { id: userId }, data: { secretCode } });
+		const [user] = await db
+			.update(users)
+			.set({ secretCode })
+			.where(eq(users.id, userId))
+			.returning();
 
 		if (!user) {
 			return NextResponse.json(
@@ -33,10 +38,10 @@ export async function POST(req: Request) {
 export async function GET(req: Request) {
 	try {
 		const { secretCode } = await req.json();
-		const userId = "user_id";
 
-		const user = await prisma.user.findUnique({
-			where: { secretCode },
+		// PRISMA: const user = await prisma.user.findUnique({ where: { secretCode } });
+		const user = await db.query.users.findFirst({
+			where: eq(users.secretCode, secretCode),
 		});
 
 		if (!user) {
