@@ -3,7 +3,6 @@ import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 const { Decimal } = Prisma;
 
-export const runtime = "edge";
 export async function POST(req: Request) {
 	try {
 		const { userId, amount } = await req.json();

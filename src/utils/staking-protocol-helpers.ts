@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { Prisma, StakingPool, StakingPosition } from "@prisma/client/edge";
+import { Prisma, StakingPool, StakingPosition } from "@prisma/client";
 
 const { Decimal } = Prisma;
 
